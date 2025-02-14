@@ -1,6 +1,5 @@
 package me.antidotaleks.iter.maps;
 
-import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -46,7 +45,7 @@ public class Map {
     }
 
     /**
-     * Initializes and sets up the internal map representation based on the given map data.
+     * Initializes and sets up the internal map/walls representation based on the given map data.
      * This method processes the input strings representing the map, removes spaces, calculates
      * the size of the map, and populates a 2D array with wall and floor information.
      *
@@ -56,7 +55,7 @@ public class Map {
      *                The strings are expected to have consistent lengths and may include spaces
      *                that will be removed during processing.
      */
-    public void setupMapData(List<String> mapData) {
+    private void setupMapData(List<String> mapData) {
         if(mapData == null || mapData.isEmpty()) return;
 
         mapData.replaceAll(s -> s.replace(" ", ""));
@@ -128,27 +127,41 @@ public class Map {
 
 
     /**
-     * Copies map from set position to new location
+     * Copies built map from set position to new auto-generated location
      * @return New {@link Location} where map was build
      */
     public Location buildMap(Location copyPosStart, Location copyPosEnd) {
-        Location mapLoc = getLocation();
+        Location mapLoc = getNewMapLocation();
 
-        // TODO: do the copying
+        // Copy all Block Displays
+        BoundingBox box = BoundingBox.of(copyPosStart, copyPosEnd);
+        Collection<Entity> bds = Iter.defaultWorld.getNearbyEntities(box, e -> e.getType() == EntityType.BLOCK_DISPLAY);
+        bds.forEach(entity -> {
+            Location loc = entity.getLocation();
+            loc.subtract(copyPosStart);
+            loc.add(mapLoc);
+            //noinspection UnstableApiUsage
+            entity.copy(loc);
+        });
+
+        for (int x = 0; x <= (int) box.getWidthX(); x++)
+        for (int y = 0; y <= (int) box.getHeight(); y++)
+        for (int z = 0; z <= (int) box.getWidthZ(); z++) {
+            BlockData block = Iter.defaultWorld.getBlockData(x+(int) box.getMinX(),y+(int) box.getMinY(),z+(int) box.getMinZ());
+            if (block.getMaterial() != Material.AIR)
+                Iter.defaultWorld.setBlockData(mapLoc.clone().add(x,y,z), block);
+        }
 
         return mapLoc;
     }
 
     /**
-     * Removes map (removes walls, dome, deletes barriers and floor)
-     * @param loc {@link Location} where map was build (located outside the built map);
-     *                            should be value returned by {@link Map#buildMap(Location, Location)} of this map.
-     *                            Value is saved in {@link Game} instance
+     * Removes map (removes all blocks and displayBlock entities)
      */
-    public void removeMap(Location loc) {
+    public void removeMap() {
         // Get useful cords
-        Location start = new Location(Iter.defaultWorld, loc.getBlockX()-1, loc.getBlockY()-1, loc.getBlockZ()-1);
-        Location end = new Location(Iter.defaultWorld, start.getX()+sizeX*3, start.getBlockY()+sizeX+sizeY+9, start.getBlockZ()+sizeY*3);
+        Location start = mapLocation.clone().add(-1, -1, -1);
+        Location end = mapLocation.clone().add(sizeX*3, sizeX+sizeY+9, sizeY*3);
 
 
         // Kill all Block Displays
@@ -168,12 +181,12 @@ public class Map {
     private static final BlockData air = Bukkit.createBlockData(Material.AIR);
 
     private static int i = 0;
-    private static Location getLocation() {
+    private static Location getNewMapLocation() {
+        //noinspection IntegerDivisionInFloatingPointContext
         Location loc = new Location(Iter.defaultWorld, (i%8+1)<<8, 0, (i/8+1)<<8);
         if(i++>=64) i=0;
         return loc;
     }
-    private static final BlockData barrier = Bukkit.createBlockData(Material.BARRIER);
 
 
     public int getSizeX() {

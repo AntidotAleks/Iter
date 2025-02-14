@@ -16,7 +16,7 @@ public class GameManager {
             player.teleport(loc.clone().add(0, 5, 0));
             player.sendMessage("Game started");
         }); // Tp players to it TODO remove
-        Game thisGame = new Game(loc, Bukkit.getOnlinePlayers().toArray(new Player[0]), map); // Create new game instance
+        Game thisGame = new Game(Bukkit.getOnlinePlayers().toArray(new Player[0]), map); // Create new game instance
         games.add(thisGame);
     }
     public static void stopGame(Game game) {
