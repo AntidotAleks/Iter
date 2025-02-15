@@ -19,7 +19,7 @@ public class StartGameCommand implements TabExecutor {
         System.out.println("Choose random map");
         Map map = GameManager.maps.get(random.nextInt(GameManager.maps.size())); // Choose random map
         System.out.println("Random map chosen");
-        GameManager.startGame(map); // Start new game on random map. TODO change 'randomness'
+        GameManager.startGame(map, null); // Start new game on random map. TODO change 'randomness'
         return true;
     }
 

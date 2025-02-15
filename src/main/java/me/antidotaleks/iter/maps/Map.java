@@ -1,5 +1,6 @@
 package me.antidotaleks.iter.maps;
 
+import com.google.common.base.Preconditions;
 import me.antidotaleks.iter.Iter;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -11,35 +12,44 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.util.BoundingBox;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 
 public class Map {
-    Location mapLocation;
-    int sizeX, sizeY;
-    int[][] map;
+    private final String mapName;
+    private final Location posStart, posEnd;
+    private final int sizeX, sizeY;
+    private int[][] map;
+    private final int[] playersInTeams;
 
-    HashMap<String, Object> settings = new HashMap<>();
     public Map(File mapFile) {
-        getData(mapFile);
-
-
-    }
-
-    private void getData(File mapFile) {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(mapFile);
 
         List<Integer> rawPos = yaml.getIntegerList("copyPosStart");
-        final Location posStart = new Location(Iter.defaultWorld, rawPos.get(0), rawPos.get(1), rawPos.get(2));
+        posStart = new Location(Iter.defaultWorld, rawPos.get(0), rawPos.get(1), rawPos.get(2));
         rawPos = yaml.getIntegerList("copyPosEnd");
-        final Location posEnd = new Location(Iter.defaultWorld, rawPos.get(0), rawPos.get(1), rawPos.get(2));
-        mapLocation = buildMap(posStart, posEnd);
+        posEnd = new Location(Iter.defaultWorld, rawPos.get(0), rawPos.get(1), rawPos.get(2));
 
-        List<String> mapData = yaml.getStringList("map");
-        mapData.removeFirst();
+        mapName = mapFile.getName().replace(".yaml", "");
+        String mapDataStr = yaml.getString("map").replace(" ", "");
+        String[] mapData = mapDataStr.split("\n");
+        Preconditions.checkArgument(!mapDataStr.isEmpty(), "Map data is empty");
+        Preconditions.checkArgument(mapDataStr.chars().filter(Character::isDigit).distinct().count() >= 2, "Not enough teams in map");
+
+        sizeX = mapData.length;
+        sizeY = mapData[0].length();
+
+        // Count amount of spawn points for each team, up to 10 teams
+        int[] count = new int[10];
+        mapDataStr.chars()
+                .filter(Character::isDigit)
+                .forEach(c -> count[c - '0']++);
+        // Remove all 0s
+        playersInTeams = Arrays.stream(count).filter(i -> i != 0).toArray();
+
+
         setupMapData(mapData);
-
 
 
     }
@@ -50,18 +60,13 @@ public class Map {
      * the size of the map, and populates a 2D array with wall and floor information.
      *
      * @param mapData List of strings, each string representing a row of the map where:
-     *                - 'X' or '#' indicates a wall or an obstacle,
+     *                - 'X' or '#' indicates a wall or an obstacle, where X blocks vision around corners.,
      *                - '.' or other characters (except space) signify floor or open space.
      *                The strings are expected to have consistent lengths and may include spaces
      *                that will be removed during processing.
      */
-    private void setupMapData(List<String> mapData) {
-        if(mapData == null || mapData.isEmpty()) return;
-
-        mapData.replaceAll(s -> s.replace(" ", ""));
-
-        sizeX = mapData.size();
-        sizeY = mapData.getFirst().replace(" ", "").length();
+    private void setupMapData(String[] mapData) {
+        if(mapData == null || mapData.length == 0) return;
 
         map = new int[sizeX*2 + 1][sizeY*2 + 1]; // Grid of walls and floors, size is doubled for between-grid objects
 
@@ -81,16 +86,16 @@ public class Map {
             for (int y = 0; y < sizeY; y++) {
 
                 // X: odd, Y: odd
-                char poi = mapData.get(x).charAt(y);
+                char poi = mapData[x].charAt(y);
                 map[x*2+1][y*2+1] = (poi == '#' || poi == 'X') ? 1 : 0;
 
                 // X: even, Y: even
                 if(x > 0 && y > 0) {
                     String chars = new String(new char[]{
-                            mapData.get(x-1).charAt(y-1), // Top left
-                            mapData.get(x).charAt(y-1),  // Top right
-                            mapData.get(x-1).charAt(y), // Bottom left
-                            poi                        // Bottom right
+                            mapData[x-1].charAt(y-1), // Top left
+                            mapData[x].charAt(y-1),  // Top right
+                            mapData[x-1].charAt(y), // Bottom left
+                            poi                    // Bottom right
                     });
                     if(chars.chars().anyMatch(c -> c == 'X')) {
                         map[x*2][y*2] = 1;
@@ -103,8 +108,8 @@ public class Map {
                 // X: even, Y: odd
                 if(x > 0) {
                     String chars = new String(new char[]{
-                            mapData.get(x-1).charAt(y), // Left
-                            poi                        // Right
+                            mapData[x-1].charAt(y), // Left
+                            poi                    // Right
                     });
                     if(chars.chars().anyMatch(c -> c == 'X' || c == '#')) {
                         map[x*2][y*2+1] = 1;
@@ -114,8 +119,8 @@ public class Map {
                 // X: odd, Y: even
                 if(y > 0) {
                     String chars = new String(new char[]{
-                            mapData.get(x).charAt(y-1), // Top
-                            poi                        // Bottom
+                            mapData[x].charAt(y-1), // Top
+                            poi                    // Bottom
                     });
                     if(chars.chars().anyMatch(c -> c == 'X' || c == '#')) {
                         map[x*2+1][y*2] = 1;
@@ -130,15 +135,15 @@ public class Map {
      * Copies built map from set position to new auto-generated location
      * @return New {@link Location} where map was build
      */
-    public Location buildMap(Location copyPosStart, Location copyPosEnd) {
+    public Location buildMap() {
         Location mapLoc = getNewMapLocation();
 
         // Copy all Block Displays
-        BoundingBox box = BoundingBox.of(copyPosStart, copyPosEnd);
+        BoundingBox box = BoundingBox.of(posStart, posEnd);
         Collection<Entity> bds = Iter.defaultWorld.getNearbyEntities(box, e -> e.getType() == EntityType.BLOCK_DISPLAY);
         bds.forEach(entity -> {
             Location loc = entity.getLocation();
-            loc.subtract(copyPosStart);
+            loc.subtract(posStart);
             loc.add(mapLoc);
             //noinspection UnstableApiUsage
             entity.copy(loc);
@@ -158,10 +163,11 @@ public class Map {
     /**
      * Removes map (removes all blocks and displayBlock entities)
      */
-    public void removeMap() {
+    public void removeMap(Location mapLocation) {
         // Get useful cords
         Location start = mapLocation.clone().add(-1, -1, -1);
         Location end = mapLocation.clone().add(sizeX*3, sizeX+sizeY+9, sizeY*3);
+
 
 
         // Kill all Block Displays
@@ -188,6 +194,9 @@ public class Map {
         return loc;
     }
 
+    public String displayName() {
+        return mapName;
+    }
 
     public int getSizeX() {
         return sizeX;
@@ -195,5 +204,16 @@ public class Map {
 
     public int getSizeY() {
         return sizeY;
+    }
+
+    public int[][] getMap() {
+        return map;
+    }
+
+    public int getTeamsAmount() {
+        return playersInTeams.length;
+    }
+    public int[] getPlayersAmountInTeams() {
+        return playersInTeams;
     }
 }
