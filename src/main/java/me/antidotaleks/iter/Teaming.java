@@ -88,13 +88,31 @@ public class Teaming implements Listener {
     public static void accept(Player player, @Nullable Player accepted) {
         // If accepted == null, accepts the latest invite
         for (Invite invite : invites) {
-            if (invite.invitee == player && (accepted == null || invite.inviter == accepted)) {
-                if (invite.request)
-                    joinPlayerToTeam(invite.inviter, invite.invitee);
-                else
-                    joinPlayerToTeam(invite.invitee, invite.inviter);
-            }
+            if (invite.invitee != player || !(accepted == null || invite.inviter == accepted))
+                continue;
+
+            if (invite.request)
+                joinPlayerToTeam(invite.inviter, invite.invitee);
+            else
+                joinPlayerToTeam(invite.invitee, invite.inviter);
+
+            break;
         }
+    }
+
+    public static void decline(Player player, @Nullable Player declined) {
+        // If declined == null, declines the latest invite
+        for (Invite invite : invites) {
+            if (invite.invitee != player || (declined != null && invite.inviter != declined))
+                continue;
+
+            invite.inviter.sendMessage(player.getName() + " has declined your invite.");
+            player.sendMessage("You have declined " + invite.inviter.getName() + "'s invite.");
+
+            invites.remove(invite);
+            break;
+        }
+
     }
 
     @EventHandler
@@ -169,24 +187,8 @@ public class Teaming implements Listener {
         answerer.spigot().sendMessage(accept, decline);
     }
 
-    // Invite await
+    // Invite
 
-    
-
-    private static class Invite {
-        public final Player inviter;
-        public final Player invitee;
-        public final long inviteTime;
-        public final boolean request;
-
-
-        public Invite(Player inviter, Player invitee, boolean requestToJoin) {
-            this.inviter = inviter;
-            this.invitee = invitee;
-            this.inviteTime = System.currentTimeMillis();
-            this.request = requestToJoin;
-        }
-    }
 
     // Remove old invites
 
@@ -232,5 +234,20 @@ public class Teaming implements Listener {
                 removeOldInvites();
             }
         }.runTaskLater(Iter.plugin, (31_000 - delta) * 20/1000);
+    }
+
+    private static class Invite {
+        public final Player inviter;
+        public final Player invitee;
+        public final long inviteTime;
+        public final boolean request;
+
+
+        public Invite(Player inviter, Player invitee, boolean requestToJoin) {
+            this.inviter = inviter;
+            this.invitee = invitee;
+            this.inviteTime = System.currentTimeMillis();
+            this.request = requestToJoin;
+        }
     }
 }
