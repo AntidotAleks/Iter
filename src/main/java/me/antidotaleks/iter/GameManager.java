@@ -113,7 +113,7 @@ public class GameManager implements Listener {
 
 
 
-    public static class MapWithQueues {
+    private static class MapWithQueues {
         private final Map map;
         private final ArrayList<PlayerQueueEvent> queues;
 

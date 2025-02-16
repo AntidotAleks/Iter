@@ -15,13 +15,13 @@ public final class Iter extends JavaPlugin {
     public void onEnable() {
         // Register custom events
 
-
-
+        @SuppressWarnings("unused")
         ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         plugin = this;
         pluginFolder = getDataFolder();
 
         SetupManager.loadFolders(); // Load maps data
+        Teaming.startRemovingOldInvites(); // Remove invites older than 30 seconds
 
 
         SetupManager.registerCommands();
