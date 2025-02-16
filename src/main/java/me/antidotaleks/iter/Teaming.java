@@ -242,7 +242,6 @@ public class Teaming implements Listener {
         public final long inviteTime;
         public final boolean request;
 
-
         public Invite(Player inviter, Player invitee, boolean requestToJoin) {
             this.inviter = inviter;
             this.invitee = invitee;

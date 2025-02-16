@@ -112,23 +112,6 @@ public class GameManager implements Listener {
     }
 
 
-
-    private static class MapWithQueues {
-        private final Map map;
-        private final ArrayList<PlayerQueueEvent> queues;
-
-        public MapWithQueues(Map map, ArrayList<PlayerQueueEvent> queues) {
-            this.map = map;
-            this.queues = queues;
-        }
-
-        public Map getMap() {
-            return map;
-        }
-
-        public ArrayList<PlayerQueueEvent> getQueues() {
-            return queues;
-        }
-    }
+    private record MapWithQueues(Map map, ArrayList<PlayerQueueEvent> queues) {}
 
 }

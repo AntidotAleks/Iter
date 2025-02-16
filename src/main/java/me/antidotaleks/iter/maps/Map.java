@@ -12,7 +12,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.util.BoundingBox;
 
 import java.io.File;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -20,8 +20,9 @@ public class Map {
     private final String mapName;
     private final Location posStart, posEnd;
     private final int sizeX, sizeY;
-    private int[][] map;
+    private boolean[][] map;
     private final int[] playersInTeams;
+    private final ArrayList<Point>[] spawnPoints;
 
     public Map(File mapFile) {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(mapFile);
@@ -35,19 +36,25 @@ public class Map {
         String mapDataStr = yaml.getString("map").replace(" ", "");
         String[] mapData = mapDataStr.split("\n");
         Preconditions.checkArgument(!mapDataStr.isEmpty(), "Map data is empty");
-        Preconditions.checkArgument(mapDataStr.chars().filter(Character::isDigit).distinct().count() >= 2, "Not enough teams in map");
+        int[] uniqueTeams = mapDataStr.chars().filter(Character::isDigit).distinct().toArray();
+        Preconditions.checkArgument(uniqueTeams.length >= 2, "Not enough teams in map");
 
         sizeX = mapData.length;
         sizeY = mapData[0].length();
+        spawnPoints = new ArrayList[uniqueTeams.length];
 
         // Count amount of spawn points for each team, up to 10 teams
-        int[] count = new int[10];
-        mapDataStr.chars()
-                .filter(Character::isDigit)
-                .forEach(c -> count[c - '0']++);
-        // Remove all 0s
-        playersInTeams = Arrays.stream(count).filter(i -> i != 0).toArray();
+        playersInTeams = new int[10];
 
+        // Adds spawn points to the spawnPoints array and counts the amount of spawn points for each team
+        for (int x = 0; x < sizeX; x++)
+        for (int y = 0; y < sizeY; y++) {
+            char c = mapData[x].charAt(y);
+            if (Character.isDigit(c)) {
+                spawnPoints[uniqueTeams[c - '0']].add(new Point(x, y));
+                playersInTeams[uniqueTeams[c - '0']]++;
+            }
+        }
 
         setupMapData(mapData);
 
@@ -68,18 +75,18 @@ public class Map {
     private void setupMapData(String[] mapData) {
         if(mapData == null || mapData.length == 0) return;
 
-        map = new int[sizeX*2 + 1][sizeY*2 + 1]; // Grid of walls and floors, size is doubled for between-grid objects
+        map = new boolean[sizeX*2 + 1][sizeY*2 + 1]; // Grid of walls and floors, size is doubled for between-grid objects
 
         // Replace first and last row with walls
         for (int j = 0; j < sizeX*2+1; j++) {
-            map[0][j] = 1;       // First row
-            map[sizeX*2][j] = 1; // Last row
+            map[0][j] = true;       // First row
+            map[sizeX*2][j] = true; // Last roww
         }
 
         // Replace first and last column (excluding corners, already covered)
         for (int i = 1; i < sizeY*2; i++) {
-            map[i][0] = 1;       // First column
-            map[i][sizeY*2] = 1; // Last column
+            map[i][0] = true;       // First column
+            map[i][sizeY*2] = true; // Last column
         }
 
         for (int x = 0; x < sizeX; x++)
@@ -87,7 +94,7 @@ public class Map {
 
                 // X: odd, Y: odd
                 char poi = mapData[x].charAt(y);
-                map[x*2+1][y*2+1] = (poi == '#' || poi == 'X') ? 1 : 0;
+                map[x*2+1][y*2+1] = (poi == '#' || poi == 'X');
 
                 // X: even, Y: even
                 if(x > 0 && y > 0) {
@@ -98,10 +105,10 @@ public class Map {
                             poi                    // Bottom right
                     });
                     if(chars.chars().anyMatch(c -> c == 'X')) {
-                        map[x*2][y*2] = 1;
+                        map[x*2][y*2] = true;
                     }
                     if(chars.chars().filter(c -> c == '#').count() >= 2) {
-                        map[x*2][y*2] = 1;
+                        map[x*2][y*2] = true;
                     }
                 }
 
@@ -112,7 +119,7 @@ public class Map {
                             poi                    // Right
                     });
                     if(chars.chars().anyMatch(c -> c == 'X' || c == '#')) {
-                        map[x*2][y*2+1] = 1;
+                        map[x*2][y*2+1] = true;
                     }
                 }
 
@@ -123,7 +130,7 @@ public class Map {
                             poi                    // Bottom
                     });
                     if(chars.chars().anyMatch(c -> c == 'X' || c == '#')) {
-                        map[x*2+1][y*2] = 1;
+                        map[x*2+1][y*2] = true;
                     }
                 }
 
@@ -206,7 +213,7 @@ public class Map {
         return sizeY;
     }
 
-    public int[][] getMap() {
+    public boolean[][] getMap() {
         return map;
     }
 
@@ -216,4 +223,6 @@ public class Map {
     public int[] getPlayersAmountInTeams() {
         return playersInTeams;
     }
+
+    private record Point(int x, int y) {}
 }
