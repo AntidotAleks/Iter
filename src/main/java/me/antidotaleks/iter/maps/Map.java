@@ -11,9 +11,9 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.util.BoundingBox;
 
+import java.awt.*;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.*;
 import java.util.List;
 
 public class Map {
@@ -22,7 +22,7 @@ public class Map {
     private final int sizeX, sizeY;
     private boolean[][] map;
     private final int[] playersInTeams;
-    private final ArrayList<Point>[] spawnPoints;
+    private final ArrayList[] spawnPoints;
 
     public Map(File mapFile) {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(mapFile);
@@ -35,8 +35,9 @@ public class Map {
         mapName = mapFile.getName().replace(".yaml", "");
         String mapDataStr = yaml.getString("map").replace(" ", "");
         String[] mapData = mapDataStr.split("\n");
-        Preconditions.checkArgument(!mapDataStr.isEmpty(), "Map data is empty");
         int[] uniqueTeams = mapDataStr.chars().filter(Character::isDigit).distinct().toArray();
+
+        Preconditions.checkArgument(!mapDataStr.isEmpty(), "Map data is empty");
         Preconditions.checkArgument(uniqueTeams.length >= 2, "Not enough teams in map");
 
         sizeX = mapData.length;
@@ -46,14 +47,22 @@ public class Map {
         // Count amount of spawn points for each team, up to 10 teams
         playersInTeams = new int[10];
 
+        HashMap<Integer, Integer> teamToIndex = new HashMap<>();
+        for (int i = 0; i < uniqueTeams.length; i++) {
+            teamToIndex.put(uniqueTeams[i], i);
+            spawnPoints[i] = new ArrayList<>();
+        }
+
         // Adds spawn points to the spawnPoints array and counts the amount of spawn points for each team
         for (int x = 0; x < sizeX; x++)
         for (int y = 0; y < sizeY; y++) {
             char c = mapData[x].charAt(y);
-            if (Character.isDigit(c)) {
-                spawnPoints[uniqueTeams[c - '0']].add(new Point(x, y));
-                playersInTeams[uniqueTeams[c - '0']]++;
-            }
+            if (!Character.isDigit(c))
+                continue;
+
+            //noinspection unchecked
+            spawnPoints[teamToIndex.get((int)c)].add(new Point(x, y));
+            playersInTeams[teamToIndex.get((int)c)]++;
         }
 
         setupMapData(mapData);
@@ -224,5 +233,7 @@ public class Map {
         return playersInTeams;
     }
 
-    private record Point(int x, int y) {}
+    public ArrayList<Point> getSpawnPoints(int team) {
+        return spawnPoints[team];
+    }
 }

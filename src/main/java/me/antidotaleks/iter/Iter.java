@@ -1,7 +1,5 @@
 package me.antidotaleks.iter;
 
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -15,16 +13,18 @@ public final class Iter extends JavaPlugin {
     public void onEnable() {
         // Register custom events
 
-        @SuppressWarnings("unused")
-        ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
+        // ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         plugin = this;
         pluginFolder = getDataFolder();
 
+        Iter.logger.info("Iter: Registering commands");
+        SetupManager.registerCommands();
+        Iter.logger.info("Iter: Loading maps");
         SetupManager.loadFolders(); // Load maps data
+        Iter.logger.info("Iter: Starting loops");
         Teaming.startRemovingOldInvites(); // Remove invites older than 30 seconds
 
 
-        SetupManager.registerCommands();
     }
     public static final World defaultWorld = Bukkit.getWorlds().getFirst();
     public static File pluginFolder;
@@ -32,7 +32,7 @@ public final class Iter extends JavaPlugin {
     @Override
     public void onDisable() {
         while (!GameManager.games.isEmpty()) {
-            GameManager.stopGame(GameManager.games.getFirst());
+            GameManager.stopGame(GameManager.games.getLast());
 
         }
     }

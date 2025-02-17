@@ -96,8 +96,9 @@ public class Teaming implements Listener {
             else
                 joinPlayerToTeam(invite.invitee, invite.inviter);
 
-            break;
+            return;
         }
+        System.out.println("Invite not found");
     }
 
     public static void decline(Player player, @Nullable Player declined) {
@@ -110,9 +111,9 @@ public class Teaming implements Listener {
             player.sendMessage("You have declined " + invite.inviter.getName() + "'s invite.");
 
             invites.remove(invite);
-            break;
+            return;
         }
-
+        System.out.println("Invite not found");
     }
 
     @EventHandler

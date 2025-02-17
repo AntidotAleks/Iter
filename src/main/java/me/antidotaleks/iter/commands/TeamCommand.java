@@ -16,6 +16,11 @@ public class TeamCommand implements TabExecutor {
 
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, String[] strings) {
+        if (!(commandSender instanceof Player)) {
+            commandSender.sendMessage("Only players can use this command");
+            return true;
+        }
+
         if (strings.length == 0)
             return true;
 
@@ -40,7 +45,7 @@ public class TeamCommand implements TabExecutor {
                     Teaming.leave((Player) commandSender);
                     break;
                 case "list":
-                    // TODO
+                    Teaming.list((Player) commandSender);
                     break;
                 default:
                     return true;
@@ -48,8 +53,8 @@ public class TeamCommand implements TabExecutor {
         }
         if (strings.length == 2) {
             Player player = Bukkit.getPlayer(strings[1]);
-            if (player == null) {
-                commandSender.sendMessage("Player not found");
+            if (player == null || commandSender.equals(player)) {
+                commandSender.sendMessage("You can't do that");
                 return true;
             }
             switch (strings[0]) {
@@ -75,7 +80,7 @@ public class TeamCommand implements TabExecutor {
     }
 
     @Override
-    public List<String> onTabComplete(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, String[] strings) {
+    public List<String> onTabComplete(CommandSender commandSender, Command command, String s, String[] strings) {
         int argIndex = strings.length - 1;
         if (argIndex == 0) {
             return List.of("join", "leave", "invite", "kick", "list", "accept", "decline");
@@ -90,6 +95,6 @@ public class TeamCommand implements TabExecutor {
                     return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
             }
         }
-        return null;
+        return List.of();
     }
 }

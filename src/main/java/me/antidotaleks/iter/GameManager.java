@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class GameManager implements Listener {
@@ -45,6 +46,11 @@ public class GameManager implements Listener {
         sortQueues();
         // TODO: implement queue logic
         MapWithQueues mwq = findRandomMapAndQueues();
+        if (mwq == null)
+            return;
+        if (mwq.shortage > 0) {
+            System.out.println("Not enough players for map "+mwq.map.displayName()+", missing "+mwq.shortage);
+        }
 
     }
 
@@ -98,7 +104,10 @@ public class GameManager implements Listener {
 
             // Якщо бодай одна черга помістилася, вважаємо цю мапу придатною
             if (!fittedQueues.isEmpty()) {
-                suitableMaps.add(new MapWithQueues(map, fittedQueues));
+                int shortage =
+                        Arrays.stream(map.getPlayersAmountInTeams()).sum()
+                        - fittedQueues.stream().mapToInt(PlayerQueueEvent::getTeamSize).sum();
+                suitableMaps.add(new MapWithQueues(map, fittedQueues, shortage));
             }
         }
 
@@ -112,6 +121,6 @@ public class GameManager implements Listener {
     }
 
 
-    private record MapWithQueues(Map map, ArrayList<PlayerQueueEvent> queues) {}
+    private record MapWithQueues(Map map, ArrayList<PlayerQueueEvent> queues, int shortage) {}
 
 }

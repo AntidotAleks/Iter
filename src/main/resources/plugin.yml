@@ -3,4 +3,13 @@ version: '0.0.1'
 main: me.antidotaleks.iter.Iter
 api-version: '1.21'
 authors: [AntidotAleks]
-depend: [ ProtocolLib ]
+#depend: [ ProtocolLib ]
+commands:
+  game:
+    description: Start a game.
+    usage: /game
+    permission: iter.game
+  gteam:
+    description: Join a team.
+    usage: /gteam <invite|kick|join|accept|decline|leave|list> [player]
+    permission: iter.gteam
