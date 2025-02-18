@@ -11,9 +11,8 @@ import org.bukkit.event.Listener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 
-public class GameManager implements Listener {
+public final class GameManager implements Listener {
     public static ArrayList<Game> games = new ArrayList<>();
 
     public static void startGame(Map map, Player[][] players) {
@@ -35,9 +34,9 @@ public class GameManager implements Listener {
     }
 
 
-    public static ArrayList<Map> maps = new ArrayList<>();
-    HashMap<String, Map> mapNames = new HashMap<>();
-    ArrayList<PlayerQueueEvent> queue = new ArrayList<>();
+    public static final ArrayList<Map> maps = new ArrayList<>();
+    public static final ArrayList<String> mapNames = new ArrayList<>();
+    private static final ArrayList<PlayerQueueEvent> queue = new ArrayList<>();
 
     @EventHandler
     public void onPlayerQueue(PlayerQueueEvent event) {
@@ -49,8 +48,20 @@ public class GameManager implements Listener {
         if (mwq == null)
             return;
         if (mwq.shortage > 0) {
-            System.out.println("Not enough players for map "+mwq.map.displayName()+", missing "+mwq.shortage);
+            System.out.println("Not enough players for map "+mwq.map.displayName()+", awaiting for more. missing "+mwq.shortage);
+            return;
         }
+        System.out.println("[Iter] Starting game on map "+mwq.map.displayName()+" with: ");
+        ArrayList<PlayerQueueEvent >[] queues = mwq.queues;
+        for (int teamIndex = 0; teamIndex < queues.length; teamIndex++) {
+            System.out.print("       - Team "+teamIndex+": ");
+            ArrayList<PlayerQueueEvent> team = queues[teamIndex];
+            for (PlayerQueueEvent playerQueueEvent : team) {
+                System.out.print(playerQueueEvent.getHost().getName()+" ");
+            }
+            System.out.println();
+        }
+
 
     }
 
@@ -77,14 +88,17 @@ public class GameManager implements Listener {
      * Finds a random map that fits the queues
      * @return MapWithQueues object that contains the map and the queues that fit into it
      */
-    private MapWithQueues findRandomMapAndQueues() {
+    private static MapWithQueues findRandomMapAndQueues() {
         // Keep all suitable maps
         ArrayList<MapWithQueues> suitableMaps = new ArrayList<>();
 
         for (Map map : maps) {
             int[] teamCaps = map.getPlayersAmountInTeams().clone();
             // List of queues that fit into the map (have the map in their filters)
-            ArrayList<PlayerQueueEvent> fittedQueues = new ArrayList<>();
+            //noinspection unchecked
+            ArrayList<PlayerQueueEvent>[] fittedQueues = new ArrayList[map.getTeamsAmount()];
+            for (int i = 0; i < fittedQueues.length; i++)
+                fittedQueues[i] = new ArrayList<>();
 
             for (PlayerQueueEvent queue : queue) {
                 if (!queue.getMapFilters().contains(map.displayName()))
@@ -96,31 +110,37 @@ public class GameManager implements Listener {
                 for (int i = 0; i < teamCaps.length; i++) {
                     if (teamCaps[i] >= teamSize) {
                         teamCaps[i] -= teamSize;
-                        fittedQueues.add(queue);
+                        fittedQueues[i].add(queue);
                         break;
                     }
                 }
             }
 
-            // Якщо бодай одна черга помістилася, вважаємо цю мапу придатною
-            if (!fittedQueues.isEmpty()) {
+            // If at least 1 queue fits into the map, add it to the suitable maps list with the player shortage amount
+            if (Arrays.stream(fittedQueues).anyMatch(queues -> !queues.isEmpty())) {
                 int shortage =
                         Arrays.stream(map.getPlayersAmountInTeams()).sum()
-                        - fittedQueues.stream().mapToInt(PlayerQueueEvent::getTeamSize).sum();
+                           - Arrays.stream(fittedQueues).flatMapToInt(list ->
+                                list.stream().mapToInt(PlayerQueueEvent::getTeamSize)).sum();
                 suitableMaps.add(new MapWithQueues(map, fittedQueues, shortage));
             }
         }
 
-        // Якщо жодна мапа не підійшла
-        if (suitableMaps.isEmpty()) {
+        // Return null if no suitable maps
+        if (suitableMaps.isEmpty())
             return null;
-        }
 
-        // Обираємо випадкову мапу з придатних
+        // Get smallest shortage value
+        int minShortage = suitableMaps.stream().mapToInt(MapWithQueues::shortage).min().getAsInt();
+
+        // Remove all maps with bigger shortage
+        suitableMaps.removeIf(mapWithQueues -> mapWithQueues.shortage() > minShortage);
+
+        // Return random map from suitable ones
         return suitableMaps.get((int) (Math.random() * suitableMaps.size()));
     }
 
 
-    private record MapWithQueues(Map map, ArrayList<PlayerQueueEvent> queues, int shortage) {}
+    private record MapWithQueues(Map map, ArrayList<PlayerQueueEvent>[] queues, int shortage) {}
 
 }

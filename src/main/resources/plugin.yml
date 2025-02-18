@@ -5,11 +5,11 @@ api-version: '1.21'
 authors: [AntidotAleks]
 #depend: [ ProtocolLib ]
 commands:
-  game:
-    description: Start a game.
-    usage: /game
-    permission: iter.game
-  gteam:
+  iqueue:
+    description: Start a queue.
+    usage: /iqueue
+    permission: iter.iqueue
+  iteam:
     description: Join a team.
-    usage: /gteam <invite|kick|join|accept|decline|leave|list> [player]
-    permission: iter.gteam
+    usage: /iteam <invite|kick|join|accept|decline|leave|list> [player]
+    permission: iter.iteam

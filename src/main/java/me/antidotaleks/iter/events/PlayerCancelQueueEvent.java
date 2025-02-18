@@ -5,7 +5,7 @@ import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 
-public class PlayerCancelQueueEvent extends Event {
+public final class PlayerCancelQueueEvent extends Event {
 
     private static final HandlerList HANDLERS = new HandlerList();
 

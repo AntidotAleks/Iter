@@ -8,14 +8,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
-public class PlayerQueueEvent extends Event {
+public final class PlayerQueueEvent extends Event {
 
     private static final HandlerList HANDLERS = new HandlerList();
 
     private final Player host;
     private final Player[] team;
-    private final ArrayList<String> mapFilters;
+    private final List<String> mapFilters;
     private final long queueStartTime;
 
     /**
@@ -24,8 +26,7 @@ public class PlayerQueueEvent extends Event {
      * @param team The host's team. Host is first in the array
      * @param mapFilters The map filters. If empty, all maps are allowed
      */
-    public PlayerQueueEvent(Player host, Player[] team, ArrayList<String> mapFilters) {
-
+    public PlayerQueueEvent(Player host, Player[] team, ArrayList<String> mapFilters) throws IllegalArgumentException {
         if (host == null)
             throw new IllegalArgumentException("Host cannot be null");
         if (mapFilters == null || mapFilters.isEmpty())
@@ -35,19 +36,21 @@ public class PlayerQueueEvent extends Event {
 
         // Ensure the host is first in the team array
         if (team == null) {
-            Iter.logger.info("Team is null, automatically setting team to host. PlayerQueueEvent: " + this);
             team = new Player[]{host};
         }
         else if (team.length == 0 || !team[0].equals(host)) {
-            Iter.logger.info("Host is not first in team array or is missing, automatically setting team to host. PlayerQueueEvent: " + this);
             ArrayList<Player> teamList = new ArrayList<>(Arrays.asList(team));
             teamList.remove(host);
             teamList.addFirst(host);
             team = teamList.toArray(new Player[0]);
         }
+
+        Iter.logger.info(String.format("New queue started with %d player%s: %s",
+                team.length, team.length > 1 ? "s" : "", Arrays.stream(team).map(Player::getName).toList()));
+
         this.team = team;
 
-        this.mapFilters = mapFilters;
+        this.mapFilters = Collections.unmodifiableList(mapFilters);
 
         this.queueStartTime = System.currentTimeMillis();
 
@@ -76,7 +79,7 @@ public class PlayerQueueEvent extends Event {
      * Get the map filters
      * @return The map filters
      */
-    public ArrayList<String> getMapFilters() {
+    public List<String> getMapFilters() {
         return mapFilters;
     }
 

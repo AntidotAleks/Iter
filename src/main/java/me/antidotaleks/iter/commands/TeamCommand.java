@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class TeamCommand implements TabExecutor {
+public final class TeamCommand implements TabExecutor {
 
 
 
@@ -48,8 +48,9 @@ public class TeamCommand implements TabExecutor {
                     Teaming.list((Player) commandSender);
                     break;
                 default:
-                    return true;
+                    break;
             }
+            return true;
         }
         if (strings.length == 2) {
             Player player = Bukkit.getPlayer(strings[1]);
@@ -60,20 +61,24 @@ public class TeamCommand implements TabExecutor {
             switch (strings[0]) {
                 case "invite":
                     Teaming.invite((Player) commandSender, player);
-                case "kick":
-                    Teaming.kick((Player) commandSender, player);
+                    break;
                 case "join":
                     Teaming.requestToJoin((Player) commandSender, player);
+                    break;
+                case "kick":
+                    Teaming.kick((Player) commandSender, player);
+                    break;
                 case "accept":
-
+                    Teaming.accept((Player) commandSender, player);
+                    break;
                 case "decline":
-
-
+                    Teaming.decline((Player) commandSender, player);
                     break;
                 default:
                     commandSender.sendMessage("Invalid arguments, expected: /team <join|leave|invite|kick|list|accept|decline> [player]");
-                    return true;
+                    break;
             }
+            return true;
         }
 
         return true;

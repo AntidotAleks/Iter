@@ -13,7 +13,9 @@ import org.bukkit.util.BoundingBox;
 
 import java.awt.*;
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 public class Map {
@@ -22,15 +24,15 @@ public class Map {
     private final int sizeX, sizeY;
     private boolean[][] map;
     private final int[] playersInTeams;
-    private final ArrayList[] spawnPoints;
+    private final ArrayList<Point>[] spawnPoints;
 
     public Map(File mapFile) {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(mapFile);
 
         List<Integer> rawPos = yaml.getIntegerList("copyPosStart");
-        posStart = new Location(Iter.defaultWorld, rawPos.get(0), rawPos.get(1), rawPos.get(2));
+        posStart = new Location(Iter.overworld, rawPos.get(0), rawPos.get(1), rawPos.get(2));
         rawPos = yaml.getIntegerList("copyPosEnd");
-        posEnd = new Location(Iter.defaultWorld, rawPos.get(0), rawPos.get(1), rawPos.get(2));
+        posEnd = new Location(Iter.overworld, rawPos.get(0), rawPos.get(1), rawPos.get(2));
 
         mapName = mapFile.getName().replace(".yaml", "");
         String mapDataStr = yaml.getString("map").replace(" ", "");
@@ -42,25 +44,26 @@ public class Map {
 
         sizeX = mapData.length;
         sizeY = mapData[0].length();
+
+        // Count amount of spawn points for each team, up to 10 teams and their spawn points
+        //noinspection unchecked
         spawnPoints = new ArrayList[uniqueTeams.length];
+        playersInTeams = new int[uniqueTeams.length];
 
-        // Count amount of spawn points for each team, up to 10 teams
-        playersInTeams = new int[10];
-
+        // Maps team number to index in the arrays
         HashMap<Integer, Integer> teamToIndex = new HashMap<>();
         for (int i = 0; i < uniqueTeams.length; i++) {
             teamToIndex.put(uniqueTeams[i], i);
             spawnPoints[i] = new ArrayList<>();
         }
 
-        // Adds spawn points to the spawnPoints array and counts the amount of spawn points for each team
+        // Saves spawn points and counts the amount of spawn points for each team (as max players in team)
         for (int x = 0; x < sizeX; x++)
         for (int y = 0; y < sizeY; y++) {
             char c = mapData[x].charAt(y);
             if (!Character.isDigit(c))
                 continue;
 
-            //noinspection unchecked
             spawnPoints[teamToIndex.get((int)c)].add(new Point(x, y));
             playersInTeams[teamToIndex.get((int)c)]++;
         }
@@ -87,15 +90,15 @@ public class Map {
         map = new boolean[sizeX*2 + 1][sizeY*2 + 1]; // Grid of walls and floors, size is doubled for between-grid objects
 
         // Replace first and last row with walls
-        for (int j = 0; j < sizeX*2+1; j++) {
-            map[0][j] = true;       // First row
-            map[sizeX*2][j] = true; // Last roww
+        for (int x = 0; x < sizeX*2+1; x++) {
+            map[x][0] = true;       // First row
+            map[x][sizeY*2] = true; // Last roww
         }
 
         // Replace first and last column (excluding corners, already covered)
-        for (int i = 1; i < sizeY*2; i++) {
-            map[i][0] = true;       // First column
-            map[i][sizeY*2] = true; // Last column
+        for (int y = 1; y < sizeY*2; y++) {
+            map[0][y] = true;       // First column
+            map[sizeX*2][y] = true; // Last column
         }
 
         for (int x = 0; x < sizeX; x++)
@@ -156,7 +159,7 @@ public class Map {
 
         // Copy all Block Displays
         BoundingBox box = BoundingBox.of(posStart, posEnd);
-        Collection<Entity> bds = Iter.defaultWorld.getNearbyEntities(box, e -> e.getType() == EntityType.BLOCK_DISPLAY);
+        Collection<Entity> bds = Iter.overworld.getNearbyEntities(box, e -> e.getType() == EntityType.BLOCK_DISPLAY);
         bds.forEach(entity -> {
             Location loc = entity.getLocation();
             loc.subtract(posStart);
@@ -168,9 +171,9 @@ public class Map {
         for (int x = 0; x <= (int) box.getWidthX(); x++)
         for (int y = 0; y <= (int) box.getHeight(); y++)
         for (int z = 0; z <= (int) box.getWidthZ(); z++) {
-            BlockData block = Iter.defaultWorld.getBlockData(x+(int) box.getMinX(),y+(int) box.getMinY(),z+(int) box.getMinZ());
+            BlockData block = Iter.overworld.getBlockData(x+(int) box.getMinX(),y+(int) box.getMinY(),z+(int) box.getMinZ());
             if (block.getMaterial() != Material.AIR)
-                Iter.defaultWorld.setBlockData(mapLoc.clone().add(x,y,z), block);
+                Iter.overworld.setBlockData(mapLoc.clone().add(x,y,z), block);
         }
 
         return mapLoc;
@@ -188,15 +191,15 @@ public class Map {
 
         // Kill all Block Displays
         BoundingBox box = BoundingBox.of(start, end);
-        Collection<Entity> bds = Iter.defaultWorld.getNearbyEntities(box, e -> e.getType() == EntityType.BLOCK_DISPLAY);
+        Collection<Entity> bds = Iter.overworld.getNearbyEntities(box, e -> e.getType() == EntityType.BLOCK_DISPLAY);
         bds.forEach(Entity::remove);
 
         //Removes all blocks
         for (int x = start.getBlockX(); x < end.getBlockX(); x++)
         for (int y = start.getBlockY(); y < end.getBlockY(); y++)
         for (int z = start.getBlockZ(); z < end.getBlockZ(); z++) {
-            if (Iter.defaultWorld.getBlockData(x,y,z).getMaterial() != Material.AIR)
-                Iter.defaultWorld.setBlockData(x,y,z, air);
+            if (Iter.overworld.getBlockData(x,y,z).getMaterial() != Material.AIR)
+                Iter.overworld.setBlockData(x,y,z, air);
         }
     }
 
@@ -205,7 +208,7 @@ public class Map {
     private static int i = 0;
     private static Location getNewMapLocation() {
         //noinspection IntegerDivisionInFloatingPointContext
-        Location loc = new Location(Iter.defaultWorld, (i%8+1)<<8, 0, (i/8+1)<<8);
+        Location loc = new Location(Iter.overworld, (i%8+1)<<8, 0, (i/8+1)<<8);
         if(i++>=64) i=0;
         return loc;
     }

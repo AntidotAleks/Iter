@@ -15,19 +15,20 @@ public final class Iter extends JavaPlugin {
 
         // ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
         plugin = this;
+        overworld = Bukkit.getWorlds().getFirst();
         pluginFolder = getDataFolder();
 
-        Iter.logger.info("Iter: Registering commands");
+        Iter.logger.info("[Iter] Registering event listeners");
+        SetupManager.registerListeners();
+        Iter.logger.info("[Iter] Registering commands");
         SetupManager.registerCommands();
-        Iter.logger.info("Iter: Loading maps");
+        Iter.logger.info("[Iter] Loading maps");
         SetupManager.loadFolders(); // Load maps data
-        Iter.logger.info("Iter: Starting loops");
-        Teaming.startRemovingOldInvites(); // Remove invites older than 30 seconds
+        Iter.logger.info("[Iter] Starting team service");
+        Teaming.onEnable(); // Remove invites older than 30 seconds and return players to the team lists
 
 
     }
-    public static final World defaultWorld = Bukkit.getWorlds().getFirst();
-    public static File pluginFolder;
 
     @Override
     public void onDisable() {
@@ -38,6 +39,8 @@ public final class Iter extends JavaPlugin {
     }
 
 
+    public static World overworld;
+    public static File pluginFolder;
     public static Logger logger = Logger.getLogger("Iter");
     public static Iter plugin;
 }
