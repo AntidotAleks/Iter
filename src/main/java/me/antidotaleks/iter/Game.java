@@ -27,13 +27,16 @@ public class Game {
         for (int i = 0; i < teamsBukkit.length; i++) {
 
             Player[] team = teamsBukkit[i];
-            teams[i] = Arrays.stream(teamsBukkit[i]).map(GamePlayer::new).toArray(GamePlayer[]::new);
+            ArrayList<GamePlayer> teamList = new ArrayList<>(Arrays.asList(teams[i]));
 
             for (Player player : team) {
                 player.setGameMode(GameMode.ADVENTURE);
                 player.setAllowFlight(true);
-                new GamePlayer(player);
+                teamList.add(
+                        new GamePlayer(player, this, map.getModifiers(i), teamDisbalance(i))
+                );
             }
+            teams[i] = teamList.toArray(new GamePlayer[0]);
         }
     }
 
@@ -60,8 +63,12 @@ public class Game {
 
         for (Player[] team : teamsBukkit) {
             for (Player player : team) {
-                player.teleport(mapLocation.getWorld().getSpawnLocation());
+                Location spawn = player.getWorld().getSpawnLocation();
+                player.teleport(spawn);
             }
         }
+    }
+    public int teamDisbalance(int teamI) {
+        return 0;
     }
 }

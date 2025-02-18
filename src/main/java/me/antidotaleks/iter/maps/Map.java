@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -24,6 +25,7 @@ public class Map {
     private boolean[][] map;
     private final int[] playersInTeams;
     private final ArrayList<Point>[] spawnPoints;
+    private final ConfigurationSection[] modifiers;
 
     public Map(File mapFile) {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(mapFile);
@@ -71,7 +73,11 @@ public class Map {
 
         setupMapData();
 
-
+        // Load modifiers
+        modifiers = new YamlConfiguration[uniqueTeams.length];
+        for (int i = 0; i < uniqueTeams.length; i++) {
+            modifiers[i] = yaml.getConfigurationSection("modifiers."+uniqueTeams[i]);
+        }
     }
 
     /**
@@ -245,5 +251,9 @@ public class Map {
 
     public ArrayList<Point> getSpawnPoints(int team) {
         return spawnPoints[team];
+    }
+
+    public ConfigurationSection getModifiers(int teamIndex) {
+        return modifiers[teamIndex];
     }
 }
