@@ -13,12 +13,11 @@ import org.bukkit.util.BoundingBox;
 
 import java.awt.*;
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.*;
 import java.util.List;
 
 public class Map {
+    private final String[] mapData;
     private final String mapName;
     private final Location posStart, posEnd;
     private final int sizeX, sizeY;
@@ -36,14 +35,16 @@ public class Map {
 
         mapName = mapFile.getName().replace(".yaml", "");
         String mapDataStr = yaml.getString("map").replace(" ", "");
-        String[] mapData = mapDataStr.split("\n");
+        mapData = mapDataStr.split("\n");
         int[] uniqueTeams = mapDataStr.chars().filter(Character::isDigit).distinct().toArray();
 
         Preconditions.checkArgument(!mapDataStr.isEmpty(), "Map data is empty");
         Preconditions.checkArgument(uniqueTeams.length >= 2, "Not enough teams in map");
+        Preconditions.checkArgument(mapData.length > 0, "Map data is empty");
+        Preconditions.checkArgument(Arrays.stream(mapData).allMatch(s -> s.length() == mapData[0].length()), "Map data lines are not equal in length");
 
-        sizeX = mapData.length;
-        sizeY = mapData[0].length();
+        sizeX = mapData[0].length();
+        sizeY = mapData.length;
 
         // Count amount of spawn points for each team, up to 10 teams and their spawn points
         //noinspection unchecked
@@ -60,7 +61,7 @@ public class Map {
         // Saves spawn points and counts the amount of spawn points for each team (as max players in team)
         for (int x = 0; x < sizeX; x++)
         for (int y = 0; y < sizeY; y++) {
-            char c = mapData[x].charAt(y);
+            char c = getChar(x, y);
             if (!Character.isDigit(c))
                 continue;
 
@@ -68,7 +69,7 @@ public class Map {
             playersInTeams[teamToIndex.get((int)c)]++;
         }
 
-        setupMapData(mapData);
+        setupMapData();
 
 
     }
@@ -76,15 +77,14 @@ public class Map {
     /**
      * Initializes and sets up the internal map/walls representation based on the given map data.
      * This method processes the input strings representing the map, removes spaces, calculates
-     * the size of the map, and populates a 2D array with wall and floor information.
-     *
-     * @param mapData List of strings, each string representing a row of the map where:
-     *                - 'X' or '#' indicates a wall or an obstacle, where X blocks vision around corners.,
-     *                - '.' or other characters (except space) signify floor or open space.
-     *                The strings are expected to have consistent lengths and may include spaces
-     *                that will be removed during processing.
+     * the size of the map, and populates a 2D array with wall and floor information. <br>
+     * Each string represents a row of the map where:
+     * - 'X' or '#' indicates a wall or an obstacle, where X blocks vision around corners.,
+     * - '.' or other characters (except space) signify floor or open space.
+     * The strings are expected to have consistent lengths and may include spaces
+     * that will be removed during processing.
      */
-    private void setupMapData(String[] mapData) {
+    private void setupMapData() {
         if(mapData == null || mapData.length == 0) return;
 
         map = new boolean[sizeX*2 + 1][sizeY*2 + 1]; // Grid of walls and floors, size is doubled for between-grid objects
@@ -105,16 +105,16 @@ public class Map {
             for (int y = 0; y < sizeY; y++) {
 
                 // X: odd, Y: odd
-                char poi = mapData[x].charAt(y);
+                char poi = getChar(x, y);
                 map[x*2+1][y*2+1] = (poi == '#' || poi == 'X');
 
                 // X: even, Y: even
                 if(x > 0 && y > 0) {
                     String chars = new String(new char[]{
-                            mapData[x-1].charAt(y-1), // Top left
-                            mapData[x].charAt(y-1),  // Top right
-                            mapData[x-1].charAt(y), // Bottom left
-                            poi                    // Bottom right
+                            getChar(x-1, y-1), // Top left
+                            getChar(x, y-1),     // Top right
+                            getChar(x-1, y),    // Bottom left
+                            poi                   // Bottom right
                     });
                     if(chars.chars().anyMatch(c -> c == 'X')) {
                         map[x*2][y*2] = true;
@@ -127,8 +127,8 @@ public class Map {
                 // X: even, Y: odd
                 if(x > 0) {
                     String chars = new String(new char[]{
-                            mapData[x-1].charAt(y), // Left
-                            poi                    // Right
+                            getChar(x-1, y), // Left
+                            poi                // Right
                     });
                     if(chars.chars().anyMatch(c -> c == 'X' || c == '#')) {
                         map[x*2][y*2+1] = true;
@@ -138,8 +138,8 @@ public class Map {
                 // X: odd, Y: even
                 if(y > 0) {
                     String chars = new String(new char[]{
-                            mapData[x].charAt(y-1), // Top
-                            poi                    // Bottom
+                            getChar(x, y-1), // Top
+                            poi                // Bottom
                     });
                     if(chars.chars().anyMatch(c -> c == 'X' || c == '#')) {
                         map[x*2+1][y*2] = true;
@@ -184,23 +184,30 @@ public class Map {
      */
     public void removeMap(Location mapLocation) {
         // Get useful cords
-        Location start = mapLocation.clone().add(-1, -1, -1);
-        Location end = mapLocation.clone().add(sizeX*3, sizeX+sizeY+9, sizeY*3);
+        Location start = mapLocation.clone();
+        Location end = mapLocation.clone().subtract(posStart).add(posEnd);
 
 
+        Iter.logger.info("[Iter] Removing map at "+mapLocation);
 
         // Kill all Block Displays
+        Iter.logger.info("       - Removing BlockDisplays");
         BoundingBox box = BoundingBox.of(start, end);
         Collection<Entity> bds = Iter.overworld.getNearbyEntities(box, e -> e.getType() == EntityType.BLOCK_DISPLAY);
         bds.forEach(Entity::remove);
 
         //Removes all blocks
-        for (int x = start.getBlockX(); x < end.getBlockX(); x++)
-        for (int y = start.getBlockY(); y < end.getBlockY(); y++)
-        for (int z = start.getBlockZ(); z < end.getBlockZ(); z++) {
+        Iter.logger.info("       - Removing blocks");
+        for (int x = start.getBlockX(); x <= end.getBlockX(); x++)
+        for (int y = start.getBlockY(); y <= end.getBlockY(); y++)
+        for (int z = start.getBlockZ(); z <= end.getBlockZ(); z++) {
             if (Iter.overworld.getBlockData(x,y,z).getMaterial() != Material.AIR)
                 Iter.overworld.setBlockData(x,y,z, air);
         }
+    }
+
+    private char getChar(int x, int y) {
+        return mapData[y].charAt(x);
     }
 
     private static final BlockData air = Bukkit.createBlockData(Material.AIR);

@@ -3,7 +3,6 @@ package me.antidotaleks.iter;
 import me.antidotaleks.iter.events.PlayerCancelQueueEvent;
 import me.antidotaleks.iter.events.PlayerQueueEvent;
 import me.antidotaleks.iter.maps.Map;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -15,21 +14,31 @@ import java.util.Arrays;
 public final class GameManager implements Listener {
     public static ArrayList<Game> games = new ArrayList<>();
 
+    public static void startGame(Map map, ArrayList<PlayerQueueEvent>[] playerQueues) {
+        Player[][] players = new Player[playerQueues.length][];
+        for (int i = 0; i < playerQueues.length; i++) {
+            if (playerQueues[i] == null)
+                continue;
+            players[i] =
+                    playerQueues[i].stream()
+                            .flatMap(e -> Arrays.stream(e.getTeam()))
+                            .toArray(Player[]::new);
+        }
+        startGame(map, players);
+    }
+
     public static void startGame(Map map, Player[][] players) {
         Location loc = map.buildMap(); // Build a map and get its location
-        Bukkit.getOnlinePlayers().forEach(player->{
-            player.teleport(loc.clone().add(0, 5, 0));
-            player.sendMessage("Game started");
-        }); // Tp players to it TODO remove
-        Game thisGame = new Game(playersToTeams(), map); // Create new game instance
+
+        Game thisGame = new Game(players, map); // Create new game instance
+        thisGame.start();
+
         games.add(thisGame);
     }
 
-    private static Player[][] playersToTeams() {
-        return new Player[][]{Bukkit.getOnlinePlayers().toArray(new Player[0])};
-    }
     public static void stopGame(Game game) {
         game.stop();
+
         games.remove(game);
     }
 
@@ -48,19 +57,24 @@ public final class GameManager implements Listener {
         if (mwq == null)
             return;
         if (mwq.shortage > 0) {
-            System.out.println("Not enough players for map "+mwq.map.displayName()+", awaiting for more. missing "+mwq.shortage);
+            Iter.logger.info("Awaiting for more players for map "+mwq.map.displayName()+". Shortage "+mwq.shortage);
             return;
         }
-        System.out.println("[Iter] Starting game on map "+mwq.map.displayName()+" with: ");
+        Iter.logger.info("[Iter] Starting game on map "+mwq.map.displayName()+" with: ");
         ArrayList<PlayerQueueEvent >[] queues = mwq.queues;
+        StringBuilder sb = new StringBuilder();
         for (int teamIndex = 0; teamIndex < queues.length; teamIndex++) {
-            System.out.print("       - Team "+teamIndex+": ");
+            sb.append(String.format("Team %d: ", teamIndex));
             ArrayList<PlayerQueueEvent> team = queues[teamIndex];
-            for (PlayerQueueEvent playerQueueEvent : team) {
-                System.out.print(playerQueueEvent.getHost().getName()+" ");
-            }
-            System.out.println();
+
+            team.stream()
+                    .flatMap(e -> Arrays.stream(e.getTeam()))
+                    .forEach(p -> sb.append(p.getName()).append(" "));
+            sb.append("\n");
         }
+        Iter.logger.info(sb.toString());
+
+        startGame(mwq.map, mwq.queues);
 
 
     }
