@@ -1,9 +1,7 @@
 package me.antidotaleks.iter.elements;
 
-import com.google.gson.JsonObject;
 import me.antidotaleks.iter.Game;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 
 public final class GamePlayer {
@@ -58,6 +56,10 @@ public final class GamePlayer {
 
     public void damage(int finalDamage) {
         setHealth(health - finalDamage);
+    }
+
+    public void heal(int amount) {
+        setHealth(health + amount);
     }
 
     public int getMaxEnergy() {
