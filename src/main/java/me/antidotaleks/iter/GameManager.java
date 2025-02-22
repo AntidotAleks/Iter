@@ -43,21 +43,22 @@ public final class GameManager implements Listener {
     }
 
 
-    public static final ArrayList<Map> maps = new ArrayList<>();
-    public static final ArrayList<String> mapNames = new ArrayList<>();
-    private static final ArrayList<PlayerQueueEvent> queue = new ArrayList<>();
+    public static final ArrayList<Map> MAPS = new ArrayList<>();
+    public static final ArrayList<String> MAP_NAMES = new ArrayList<>();
+    private static final ArrayList<PlayerQueueEvent> QUEUES = new ArrayList<>();
 
     @EventHandler
     public void onPlayerQueue(PlayerQueueEvent event) {
-        queue.add(event);
+        QUEUES.add(event);
 
         sortQueues();
-        // TODO: implement queue logic
+
         MapWithQueues mwq = findRandomMapAndQueues();
+
         if (mwq == null)
             return;
         if (mwq.shortage > 0) {
-            Iter.logger.info("Awaiting for more players for map "+mwq.map.displayName()+". Shortage "+mwq.shortage);
+            Iter.logger.info("Awaiting for more players for map "+mwq.map.displayName()+". Shortage: "+mwq.shortage + " players");
             return;
         }
         Iter.logger.info("[Iter] Starting game on map "+mwq.map.displayName()+" with: ");
@@ -74,6 +75,11 @@ public final class GameManager implements Listener {
         }
         Iter.logger.info(sb.toString());
 
+        for (ArrayList<PlayerQueueEvent> queueList : queues) {
+            for (PlayerQueueEvent playerQueueEvent : queueList) {
+                QUEUES.remove(playerQueueEvent);
+            }
+        }
         startGame(mwq.map, mwq.queues);
 
 
@@ -81,7 +87,7 @@ public final class GameManager implements Listener {
 
     @EventHandler
     public void onPlayerLeaveQueue(PlayerCancelQueueEvent event) {
-        queue.removeIf(playerQueueEvent -> playerQueueEvent.getHost().equals(event.getHost()));
+        QUEUES.removeIf(playerQueueEvent -> playerQueueEvent.getHost().equals(event.getHost()));
     }
 
     /**
@@ -89,7 +95,7 @@ public final class GameManager implements Listener {
      */
     private void sortQueues() {
         // Sort queues by size (bigger first), then by time (older first)
-        queue.sort((o1, o2) -> {
+        QUEUES.sort((o1, o2) -> {
             if (o1.getTeamSize() != o2.getTeamSize()) {
                 return o2.getTeamSize() - o1.getTeamSize();
             }
@@ -106,7 +112,7 @@ public final class GameManager implements Listener {
         // Keep all suitable maps
         ArrayList<MapWithQueues> suitableMaps = new ArrayList<>();
 
-        for (Map map : maps) {
+        for (Map map : MAPS) {
             int[] teamCaps = map.getPlayersAmountInTeams().clone();
             // List of queues that fit into the map (have the map in their filters)
             //noinspection unchecked
@@ -114,7 +120,7 @@ public final class GameManager implements Listener {
             for (int i = 0; i < fittedQueues.length; i++)
                 fittedQueues[i] = new ArrayList<>();
 
-            for (PlayerQueueEvent queue : queue) {
+            for (PlayerQueueEvent queue : QUEUES) {
                 if (!queue.getMapFilters().contains(map.displayName()))
                     continue;
 

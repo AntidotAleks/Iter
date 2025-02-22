@@ -35,7 +35,7 @@ public final class QueueCommand implements TabExecutor {
             case "start":
                 Player[] team = Teaming.getTeamWithHost(player);
                 try {
-                    PlayerQueueEvent event = new PlayerQueueEvent(player, team, GameManager.mapNames);
+                    PlayerQueueEvent event = new PlayerQueueEvent(player, team, GameManager.MAP_NAMES);
                     Bukkit.getPluginManager().callEvent(event);
                 } catch (IllegalArgumentException e) {
                     Iter.logger.warning(e.getMessage());

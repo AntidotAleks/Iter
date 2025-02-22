@@ -20,10 +20,13 @@ public final class Iter extends JavaPlugin {
 
         Iter.logger.info("[Iter] Registering event listeners");
         SetupManager.registerListeners();
+
         Iter.logger.info("[Iter] Registering commands");
         SetupManager.registerCommands();
+
         Iter.logger.info("[Iter] Loading maps");
         SetupManager.loadFolders(); // Load maps data
+
         Iter.logger.info("[Iter] Starting team service");
         Teaming.onEnable(); // Remove invites older than 30 seconds and return players to the team lists
 

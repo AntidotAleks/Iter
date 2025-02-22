@@ -246,4 +246,10 @@ public class Map {
     public ArrayList<Point> getSpawnPoints(int team) {
         return spawnPoints[team];
     }
+
+    public boolean isWall(int x, int y) {
+        if (x < 0 || y < 0 || x >= sizeX || y >= sizeY)
+            return true;
+        return map[x*2+1][y*2+1];
+    }
 }

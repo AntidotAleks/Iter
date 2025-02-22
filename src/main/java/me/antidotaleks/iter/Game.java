@@ -2,9 +2,11 @@ package me.antidotaleks.iter;
 
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.maps.Map;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -27,17 +29,30 @@ public class Game {
         for (int i = 0; i < teamsBukkit.length; i++) {
 
             Player[] team = teamsBukkit[i];
-            teams[i] = Arrays.stream(teamsBukkit[i]).map(GamePlayer::new).toArray(GamePlayer[]::new);
+            teams[i] = Arrays.stream(teamsBukkit[i]).map(player -> new GamePlayer(player, this)).toArray(GamePlayer[]::new);
 
             for (Player player : team) {
                 player.setGameMode(GameMode.ADVENTURE);
                 player.setAllowFlight(true);
-                new GamePlayer(player);
+            }
+
+            for (GamePlayer gamePlayer : teams[i]) {
+                Bukkit.getPluginManager().registerEvents(gamePlayer, Iter.plugin);
             }
         }
     }
 
+    public Map getMap() {
+        return map;
+    }
 
+    /**
+     * Get the map location
+     * @return the map location, not cloned!
+     */
+    public Location getMapLocation() {
+        return mapLocation;
+    }
 
     public void start() {
         for (int teamI = 0; teamI < map.getTeamsAmount(); teamI++) {
@@ -57,6 +72,12 @@ public class Game {
 
     public void stop() {
         map.removeMap(mapLocation);
+
+        for (GamePlayer[] team : teams) {
+            for (GamePlayer player : team) {
+                HandlerList.unregisterAll(player);
+            }
+        }
 
         for (Player[] team : teamsBukkit) {
             for (Player player : team) {

@@ -64,8 +64,8 @@ public class SetupManager {
             try {
                 Iter.logger.info("       - "+mapName);
                 me.antidotaleks.iter.maps.Map current = new me.antidotaleks.iter.maps.Map(mapFile);
-                GameManager.maps.add(current);
-                GameManager.mapNames.add(mapName);
+                GameManager.MAPS.add(current);
+                GameManager.MAP_NAMES.add(mapName);
             } catch (Exception e) {
                 Iter.logger.warning("Failed to load map "+mapName+": "+e.getMessage() +"\n"+
                         Arrays.stream(e.getStackTrace())
