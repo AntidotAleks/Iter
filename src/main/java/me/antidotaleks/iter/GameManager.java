@@ -58,10 +58,10 @@ public final class GameManager implements Listener {
         if (mwq == null)
             return;
         if (mwq.shortage > 0) {
-            Iter.logger.info("Awaiting for more players for map "+mwq.map.displayName()+". Shortage: "+mwq.shortage + " players");
+            Iter.logger.info("Awaiting for more players for map "+mwq.map.getDisplayName()+". Shortage: "+mwq.shortage + " players");
             return;
         }
-        Iter.logger.info("[Iter] Starting game on map "+mwq.map.displayName()+" with: ");
+        Iter.logger.info("[Iter] Starting game on map "+mwq.map.getDisplayName()+" with: ");
         ArrayList<PlayerQueueEvent >[] queues = mwq.queues;
         StringBuilder sb = new StringBuilder();
         for (int teamIndex = 0; teamIndex < queues.length; teamIndex++) {
@@ -121,7 +121,7 @@ public final class GameManager implements Listener {
                 fittedQueues[i] = new ArrayList<>();
 
             for (PlayerQueueEvent queue : QUEUES) {
-                if (!queue.getMapFilters().contains(map.displayName()))
+                if (!queue.getMapFilters().contains(map.getDisplayName()))
                     continue;
 
                 int teamSize = queue.getTeamSize();
