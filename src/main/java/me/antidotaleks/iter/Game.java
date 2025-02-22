@@ -16,6 +16,8 @@ import java.util.Collections;
 public class Game {
     private final GamePlayer[][] teams;
     private final Player[][] teamsBukkit;
+    private int currentTeamPlay = 0;
+    private final int[] teamPlayOrder;
     private final Map map;
     private final Location mapLocation;
 
@@ -24,6 +26,7 @@ public class Game {
         this.mapLocation = map.buildMap();
         this.teams = new GamePlayer[players.length][];
         this.teamsBukkit = players;
+        this.teamPlayOrder = map.teamPlayOrder();
 
 
         for (int i = 0; i < teamsBukkit.length; i++) {
@@ -84,5 +87,12 @@ public class Game {
                 player.teleport(mapLocation.getWorld().getSpawnLocation());
             }
         }
+    }
+    public int teamDisbalance(int teamI) {
+        return 0;
+    }
+
+    public void stepPlayIndex() {
+        currentTeamPlay = (++currentTeamPlay)%teamPlayOrder.length;
     }
 }

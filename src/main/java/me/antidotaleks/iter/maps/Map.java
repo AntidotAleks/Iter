@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -23,7 +24,9 @@ public class Map {
     private final int sizeX, sizeY;
     private boolean[][] map;
     private final int[] playersInTeams;
+    private final int[] teamPlayOrder;
     private final ArrayList<Point>[] spawnPoints;
+    private final ConfigurationSection[] modifiers;
 
     public Map(File mapFile) {
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(mapFile);
@@ -32,6 +35,8 @@ public class Map {
         posStart = new Location(Iter.overworld, rawPos.get(0), rawPos.get(1), rawPos.get(2));
         rawPos = yaml.getIntegerList("copyPosEnd");
         posEnd = new Location(Iter.overworld, rawPos.get(0), rawPos.get(1), rawPos.get(2));
+
+        Preconditions.checkArgument(yaml.getString("map") != null, "Map data is missing");
 
         mapName = mapFile.getName().replace(".yaml", "");
         String mapDataStr = yaml.getString("map").replace(" ", "");
@@ -46,7 +51,7 @@ public class Map {
         sizeX = mapData[0].length();
         sizeY = mapData.length;
 
-        // Count amount of spawn points for each team, up to 10 teams and their spawn points
+        // Count amount of spawn points for each team, up to 10 teams; their spawn points
         //noinspection unchecked
         spawnPoints = new ArrayList[uniqueTeams.length];
         playersInTeams = new int[uniqueTeams.length];
@@ -58,7 +63,8 @@ public class Map {
             spawnPoints[i] = new ArrayList<>();
         }
 
-        // Saves spawn points and counts the amount of spawn points for each team (as max players in team)
+        // Saves spawn points and counts the amount of spawn points for each team (as max players in team);
+//      // Saves play order
         for (int x = 0; x < sizeX; x++)
         for (int y = 0; y < sizeY; y++) {
             char c = getChar(x, y);
@@ -69,9 +75,28 @@ public class Map {
             playersInTeams[teamToIndex.get((int)c)]++;
         }
 
+
+        List<Integer> li = yaml.getIntegerList("teamPlayOrder");
+        if (li.size() != uniqueTeams.length)
+            this.teamPlayOrder = null;
+        else {
+            int[] teamPlayOrder = null;
+            try {
+                teamPlayOrder = li.stream().mapToInt(teamToIndex::get).toArray();
+            } catch (Exception e) {
+                Iter.logger.warning("Failed to load team play order for map "+mapName+": "+e.getMessage());
+            }
+            this.teamPlayOrder = teamPlayOrder;
+        }
+
         setupMapData();
 
+        // Load modifiers
+        modifiers = new YamlConfiguration[uniqueTeams.length];
 
+        for (int i = 0; i < uniqueTeams.length; i++) {
+            modifiers[i] = yaml.getConfigurationSection("modifiers."+uniqueTeams[i]);
+        }
     }
 
     /**
@@ -206,6 +231,8 @@ public class Map {
         }
     }
 
+    // Utils
+
     private char getChar(int x, int y) {
         return mapData[y].charAt(x);
     }
@@ -220,7 +247,15 @@ public class Map {
         return loc;
     }
 
-    public String displayName() {
+    public boolean isWall(int x, int y) {
+        if (x < 0 || y < 0 || x >= sizeX || y >= sizeY)
+            return true;
+        return map[x*2+1][y*2+1];
+    }
+
+    // Getters/Setters
+
+    public String getDisplayName() {
         return mapName;
     }
 
@@ -239,17 +274,35 @@ public class Map {
     public int getTeamsAmount() {
         return playersInTeams.length;
     }
+
     public int[] getPlayersAmountInTeams() {
         return playersInTeams;
+    }
+
+    /**
+     * Returns the order in which teams should play.
+     * If the order is not specified, returns a random order.
+     * @return Array of team indexes in order of play
+     */
+    public int[] teamPlayOrder() {
+        // If order is specified, return order
+        if (teamPlayOrder != null) {
+            return teamPlayOrder;
+        }
+        // Otherwise return random order
+        ArrayList<Integer> order = new ArrayList<>();
+        for (int i = 0; i < playersInTeams.length; i++) {
+            order.add(i);
+        }
+        Collections.shuffle(order);
+        return order.stream().mapToInt(i -> i).toArray();
     }
 
     public ArrayList<Point> getSpawnPoints(int team) {
         return spawnPoints[team];
     }
 
-    public boolean isWall(int x, int y) {
-        if (x < 0 || y < 0 || x >= sizeX || y >= sizeY)
-            return true;
-        return map[x*2+1][y*2+1];
+    public ConfigurationSection getModifiers(int teamIndex) {
+        return modifiers[teamIndex];
     }
 }

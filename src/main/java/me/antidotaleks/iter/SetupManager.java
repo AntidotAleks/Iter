@@ -40,6 +40,7 @@ public class SetupManager {
             Iter.logger.info("       - "+pair.getKey());
             PluginCommand command = Iter.plugin.getCommand(pair.getKey());
 
+            assert command != null;
             command.setExecutor(pair.getValue());
             command.setTabCompleter(pair.getValue());
         }
