@@ -59,6 +59,7 @@ public final class QueueCommand implements TabExecutor {
                 player.sendMessage("Stopping all games");
                 for (int i = 0; i < GameManager.games.size(); i++)
                     GameManager.stopGame(GameManager.games.getLast());
+                
                 player.sendMessage("All games stopped");
                 break;
             default:

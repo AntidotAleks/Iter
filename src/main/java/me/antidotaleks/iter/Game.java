@@ -32,7 +32,10 @@ public class Game {
         for (int i = 0; i < teamsBukkit.length; i++) {
 
             Player[] team = teamsBukkit[i];
-            teams[i] = Arrays.stream(teamsBukkit[i]).map(player -> new GamePlayer(player, this)).toArray(GamePlayer[]::new);
+            int tempI = i;
+            teams[i] = Arrays.stream(teamsBukkit[i])
+                    .map(player -> new GamePlayer(player, this, map.getModifiers(tempI), 1))
+                    .toArray(GamePlayer[]::new);
 
             for (Player player : team) {
                 player.setGameMode(GameMode.ADVENTURE);

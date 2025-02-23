@@ -70,11 +70,11 @@ public final class GamePlayer implements Listener {
         if (player == null)
             return null;
 
-        if (player.getLocation().getPitch() <= 0) // cancel if looks up
+        if (player.getLocation().getPitch() <= 0) // cancel if player looks up
             return null;
 
 
-        RayTraceResult result = player.rayTraceBlocks(50);
+        RayTraceResult result = player.rayTraceBlocks(66);
         if (result == null || result.getHitBlock() == null || result.getHitBlock().getLocation().getBlockY() != 0)
             return null;
 
@@ -114,6 +114,7 @@ public final class GamePlayer implements Listener {
         setHealth(health + amount);
     }
 
+
     public int getMaxEnergy() {
         return maxEnergy;
     }
@@ -135,6 +136,10 @@ public final class GamePlayer implements Listener {
         }
         setEnergy(this.energy - energy);
         return true;
+    }
+
+    public void restoreEnergy(int energy) {
+        setEnergy(this.energy + energy);
     }
 
     public int getFlatDamage() {
