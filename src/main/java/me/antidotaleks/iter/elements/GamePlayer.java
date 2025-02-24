@@ -105,6 +105,10 @@ public final class GamePlayer implements Listener {
 
     // Getters/Setters
 
+    public InfoDisplay getInfoDisplay() {
+        return infoDisplay;
+    }
+
     public int getMaxHealth() {
         return maxHealth;
     }

@@ -77,7 +77,7 @@ public class SetupManager {
     // Teams
 
     public static Team hideNameTeam;
-    public static void setupTeams() {
+    public static void setupMinecraftTeams() {
         Scoreboard sb = Bukkit.getScoreboardManager().getMainScoreboard();
 
         hideNameTeam = sb.getTeam("hide_name");

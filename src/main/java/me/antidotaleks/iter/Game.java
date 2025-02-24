@@ -61,17 +61,20 @@ public class Game {
     }
 
     public void start() {
-        for (int teamI = 0; teamI < map.getTeamsAmount(); teamI++) {
+        for (int teamIndex = 0; teamIndex < map.getTeamsAmount(); teamIndex++) {
             // Get the team and their spawn points
-            Player[] team = teamsBukkit[teamI];
-            ArrayList<Point> tsp = map.getSpawnPoints(teamI);
+            GamePlayer[] team = teams[teamIndex];
+            ArrayList<Point> tsp = map.getSpawnPoints(teamIndex);
             // Shuffle the spawn points
             Collections.shuffle(tsp);
             // Teleport players to their spawn points
-            for (int playerI = 0; playerI < team.length; playerI++) {
-                Point point = tsp.get(playerI);
-                Location spawn = mapLocation.clone().add(point.x*3+5.5, 1, point.y*3+5.5);
-                team[playerI].teleport(spawn);
+            for (int playerIndex = 0; playerIndex < team.length; playerIndex++) {
+                Point point = tsp.get(playerIndex); // Get team's spawn point at index playerIndex
+                Location spawn = mapLocation.clone().add(point.x*3+5.5, 1, point.y*3+5.5); // Transform the point to a location
+                GamePlayer gamePlayer = teams[teamIndex][playerIndex];
+                gamePlayer.getPlayer().teleport(spawn);
+                gamePlayer.getInfoDisplay().mount();
+
             }
         }
     }
