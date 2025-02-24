@@ -72,6 +72,7 @@ public class Game {
                 Point point = tsp.get(playerIndex); // Get team's spawn point at index playerIndex
                 Location spawn = mapLocation.clone().add(point.x*3+5.5, 1, point.y*3+5.5); // Transform the point to a location
                 GamePlayer gamePlayer = teams[teamIndex][playerIndex];
+
                 gamePlayer.getPlayer().teleport(spawn);
                 gamePlayer.getInfoDisplay().mount();
 
