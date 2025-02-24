@@ -6,6 +6,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabExecutor;
 import org.bukkit.event.Listener;
+import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -70,5 +72,18 @@ public class SetupManager {
                 e.printStackTrace();
             }
         }
+    }
+
+    // Teams
+
+    public static Team hideNameTeam;
+    public static void setupTeams() {
+        Scoreboard sb = Bukkit.getScoreboardManager().getMainScoreboard();
+
+        hideNameTeam = sb.getTeam("hide_name");
+        if (hideNameTeam == null)
+            hideNameTeam = sb.registerNewTeam("hide_name");
+
+        hideNameTeam.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
     }
 }
