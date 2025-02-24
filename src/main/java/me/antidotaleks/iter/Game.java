@@ -34,7 +34,7 @@ public class Game {
             Player[] team = teamsBukkit[i];
             int tempI = i;
             teams[i] = Arrays.stream(teamsBukkit[i])
-                    .map(player -> new GamePlayer(player, this, map.getModifiers(tempI), 1))
+                    .map(player -> new GamePlayer(player, this, map.getModifiers(tempI), 0))
                     .toArray(GamePlayer[]::new);
 
             for (Player player : team) {
@@ -82,6 +82,7 @@ public class Game {
         for (GamePlayer[] team : teams) {
             for (GamePlayer player : team) {
                 HandlerList.unregisterAll(player);
+                player.stop();
             }
         }
 

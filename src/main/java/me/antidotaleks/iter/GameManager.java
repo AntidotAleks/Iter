@@ -61,19 +61,21 @@ public final class GameManager implements Listener {
             Iter.logger.info("Awaiting for more players for map "+mwq.map.getDisplayName()+". Shortage: "+mwq.shortage + " players");
             return;
         }
-        Iter.logger.info("[Iter] Starting game on map "+mwq.map.getDisplayName()+" with: ");
-        ArrayList<PlayerQueueEvent >[] queues = mwq.queues;
-        StringBuilder sb = new StringBuilder();
-        for (int teamIndex = 0; teamIndex < queues.length; teamIndex++) {
-            sb.append(String.format("Team %d: ", teamIndex));
-            ArrayList<PlayerQueueEvent> team = queues[teamIndex];
 
+        Iter.logger.info("[Iter] Starting game on map "+mwq.map.getDisplayName()+" with:");
+
+        ArrayList<PlayerQueueEvent >[] queues = mwq.queues;
+        for (int teamIndex = 0; teamIndex < queues.length; teamIndex++) {
+            StringBuilder sb = new StringBuilder();
+
+            sb.append(String.format("       - Team %d: ", teamIndex));
+            ArrayList<PlayerQueueEvent> team = queues[teamIndex];
             team.stream()
                     .flatMap(e -> Arrays.stream(e.getTeam()))
                     .forEach(p -> sb.append(p.getName()).append(" "));
-            sb.append("\n");
+
+            Iter.logger.info(sb.toString());
         }
-        Iter.logger.info(sb.toString());
 
         for (ArrayList<PlayerQueueEvent> queueList : queues) {
             for (PlayerQueueEvent playerQueueEvent : queueList) {

@@ -2,6 +2,7 @@ package me.antidotaleks.iter.elements;
 
 import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
+import me.antidotaleks.iter.utils.InfoDisplay;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -15,6 +16,7 @@ import java.awt.*;
 public final class GamePlayer implements Listener {
     private final Player player;
     private final Game game;
+    private final InfoDisplay infoDisplay;
 
     private int maxHealth = 30;
     private int health = maxHealth;
@@ -29,11 +31,15 @@ public final class GamePlayer implements Listener {
         this.player = player;
         this.game = game;
         modifiers(modifiers, disbalanceModifier);
+        infoDisplay = new InfoDisplay(this);
     }
 
 
 
     public void modifiers(ConfigurationSection modifiers, double disbalanceModifier) {
+        if (modifiers == null)
+            modifiers = null;
+
         maxHealth = (int) Math.round(
                 maxHealth * modifiers.getDouble("health", 1) * ( disbalanceModifier*.5 + 1 )
         );
@@ -87,6 +93,14 @@ public final class GamePlayer implements Listener {
             return null;
 
         return coords;
+    }
+
+    public void updateInfo() {
+        infoDisplay.updateData();
+    }
+
+    public void stop() {
+        infoDisplay.remove();
     }
 
     // Getters/Setters

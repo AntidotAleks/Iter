@@ -14,8 +14,8 @@ import org.bukkit.util.BoundingBox;
 
 import java.awt.*;
 import java.io.File;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class Map {
     private final String[] mapData;
@@ -92,10 +92,14 @@ public class Map {
         setupMapData();
 
         // Load modifiers
-        modifiers = new YamlConfiguration[uniqueTeams.length];
+        modifiers = new ConfigurationSection[uniqueTeams.length];
 
         for (int i = 0; i < uniqueTeams.length; i++) {
-            modifiers[i] = yaml.getConfigurationSection("modifiers."+uniqueTeams[i]);
+            modifiers[i] = yaml.getConfigurationSection("modifiers.team"+uniqueTeams[i]);
+
+            if (modifiers[i] == null) {
+                modifiers[i] = yaml.createSection("empty");
+            }
         }
     }
 

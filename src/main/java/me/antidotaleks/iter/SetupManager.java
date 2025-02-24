@@ -9,10 +9,8 @@ import org.bukkit.event.Listener;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class SetupManager {
 
@@ -68,11 +66,8 @@ public class SetupManager {
                 GameManager.MAPS.add(current);
                 GameManager.MAP_NAMES.add(mapName);
             } catch (Exception e) {
-                Iter.logger.warning("Failed to load map "+mapName+": "+e.getMessage() +"\n"+
-                        Arrays.stream(e.getStackTrace())
-                        .map(StackTraceElement::toString)
-                        .collect(Collectors.joining("\n")));
-
+                Iter.logger.warning("Failed to load map "+mapName+": ");
+                e.printStackTrace();
             }
         }
     }
