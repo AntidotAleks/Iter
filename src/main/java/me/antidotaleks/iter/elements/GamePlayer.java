@@ -8,15 +8,35 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.util.RayTraceResult;
 
-import java.awt.*;
+import java.awt.Point;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public final class GamePlayer implements Listener {
+
+    // Player
+
     private final Player player;
     private final Game game;
     private final InfoDisplay infoDisplay;
+    private final Point pos = new Point(0, 0);
+
+    // Items
+
+    private final ArrayList<GameItem> items = new ArrayList<>();
+    private int slotSelected = 0;
+    private final ArrayList<Map.Entry<GameItem, Point>> itemsUsed = new ArrayList<>();
+    // Necessary items
+    private final ItemWalk itemWalk = new ItemWalk(this);
+
+    // Stats
 
     private int maxHealth = 30;
     private int health = maxHealth;
@@ -32,6 +52,8 @@ public final class GamePlayer implements Listener {
         this.game = game;
         modifiers(modifiers, disbalanceModifier);
         infoDisplay = new InfoDisplay(this);
+
+        items.add(itemWalk);
     }
 
 
@@ -67,12 +89,61 @@ public final class GamePlayer implements Listener {
         if (tilePos == null)
             return;
 
-        Iter.logger.info("Tile pos: " + tilePos);
+        GameItem item = items.get(slotSelected);
+
+        if (item.usable(tilePos)) {
+            itemsUsed.add(Map.entry(item, tilePos));
+
+            if (item instanceof PreUsed)
+                ((PreUsed) item).preUse(tilePos);
+        }
+
+        Iter.logger.info("Tile pos: [" + tilePos.x + ", " + tilePos.y+"]");
+    }
+
+    @EventHandler
+    public void nextItem(PlayerSwapHandItemsEvent event) {
+        if (!event.getPlayer().equals(player))
+            return;
+        event.setCancelled(true);
+
+        slotSelected = (slotSelected + 1) % items.size();
+
+    }
+
+    @EventHandler
+    public void undo(PlayerDropItemEvent event) {
+        if (!event.getPlayer().equals(player))
+            return;
+        event.setCancelled(true);
+
+        // If shift+q, undo all
+        if (!player.isSneaking()) {
+            undoLast();
+            return;
+        }
+
+        while (!itemsUsed.isEmpty())
+            undoLast();
     }
 
     // Utils
 
-    public Point getTilePos() {
+    public Point getPosition() {
+        return pos;
+    }
+
+    private void undoLast() {
+        this.restoreEnergy(itemsUsed.getLast().getKey().getEnergyUsage());
+
+        GameItem lastItem = itemsUsed.getLast().getKey();
+        if (lastItem instanceof PreUsed)
+            ((PreUsed) lastItem).undoPreUse();
+
+        itemsUsed.removeLast();
+    }
+
+    private Point getTilePos() {
         if (player == null)
             return null;
 
@@ -174,5 +245,17 @@ public final class GamePlayer implements Listener {
 
     public Game getGame() {
         return game;
+    }
+
+    public GamePlayer[] getTeam() {
+        return game.getTeam(player);
+    }
+
+    public List<Map.Entry<GameItem, Point>> getItemsUsed() {
+        return Collections.unmodifiableList(itemsUsed);
+    }
+
+    public List<Point> getStepPlanning() {
+        return itemWalk.getStepPlanning();
     }
 }

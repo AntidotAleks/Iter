@@ -148,6 +148,7 @@ public final class Teaming implements Listener {
     @EventHandler
     public static void onPlayerJoin(PlayerJoinEvent event) {
         teams.put(event.getPlayer(), new ArrayList<>());
+        SetupManager.hideNameTeam.addEntry(event.getPlayer().getName());
     }
 
     @EventHandler

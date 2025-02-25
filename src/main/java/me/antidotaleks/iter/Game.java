@@ -103,4 +103,36 @@ public class Game {
     public void stepPlayIndex() {
         currentTeamPlay = (++currentTeamPlay)%teamPlayOrder.length;
     }
+
+    public GamePlayer getPlayer(Player player) {
+        return Arrays.stream(teams)
+                .flatMap(Arrays::stream)
+                .filter(gamePlayer -> gamePlayer.getPlayer().equals(player))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public GamePlayer getPlayer(Point coords) {
+        for (GamePlayer[] team : teams) {
+            for (GamePlayer player : team) {
+                if (player.getPosition().equals(coords))
+                    return player;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get the team of a player
+     * @param player the player
+     * @return the team of the player
+     * @throws IllegalArgumentException if the player is not in the game, shouldn't happen
+     */
+    public GamePlayer[] getTeam(Player player) {
+        return Arrays.stream(teams)
+                .filter(team -> Arrays.stream(team).anyMatch(gamePlayer -> gamePlayer.getPlayer().equals(player)))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Player not in the game"));
+    }
+
 }

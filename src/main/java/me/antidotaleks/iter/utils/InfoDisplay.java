@@ -1,7 +1,6 @@
 package me.antidotaleks.iter.utils;
 
 import me.antidotaleks.iter.Iter;
-import me.antidotaleks.iter.SetupManager;
 import me.antidotaleks.iter.elements.GamePlayer;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Color;
@@ -19,9 +18,7 @@ public class InfoDisplay {
         this.gamePlayer = player;
         this.player = player.getPlayer();
 
-        // Create scoreboard
-        SetupManager.hideNameTeam.addEntry(player.getPlayer().getName());
-
+        // Create text display
         infoDisplay = this.player.getWorld().spawn(player.getGame().getMapLocation(), TextDisplay.class);
 
         infoDisplay.setAlignment(TextDisplay.TextAlignment.CENTER);
