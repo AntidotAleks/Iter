@@ -291,6 +291,7 @@ public class Map {
     public int[] teamPlayOrder() {
         // If order is specified, return order
         if (teamPlayOrder != null) {
+            Iter.logger.info("Using specified team play order for map "+mapName+": "+ Arrays.toString(teamPlayOrder));
             return teamPlayOrder;
         }
         // Otherwise return random order
@@ -299,6 +300,7 @@ public class Map {
             order.add(i);
         }
         Collections.shuffle(order);
+        Iter.logger.info("Using random team play order for map "+mapName+": "+order);
         return order.stream().mapToInt(i -> i).toArray();
     }
 

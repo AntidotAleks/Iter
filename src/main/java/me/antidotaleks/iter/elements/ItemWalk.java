@@ -22,6 +22,9 @@ public class ItemWalk extends GameItem implements PreUsed {
 
     @Override
     public boolean usable(Point coords) {
+        if(player.getPosition().distance(coords) > 1.1 || player.getPosition().equals(coords))
+            return false;
+
         // Can't walk on non-empty tiles
         if (!TargetSelector.isEmptyGround(coords, player))
             return false;

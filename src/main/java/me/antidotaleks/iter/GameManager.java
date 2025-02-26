@@ -3,9 +3,11 @@ package me.antidotaleks.iter;
 import me.antidotaleks.iter.events.PlayerCancelQueueEvent;
 import me.antidotaleks.iter.events.PlayerQueueEvent;
 import me.antidotaleks.iter.maps.Map;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 
 import java.util.ArrayList;
@@ -31,6 +33,7 @@ public final class GameManager implements Listener {
         Location loc = map.buildMap(); // Build a map and get its location
 
         Game thisGame = new Game(players, map); // Create new game instance
+        Bukkit.getPluginManager().registerEvents(thisGame, Iter.plugin);
         thisGame.start();
 
         games.add(thisGame);
@@ -38,6 +41,7 @@ public final class GameManager implements Listener {
 
     public static void stopGame(Game game) {
         game.stop();
+        HandlerList.unregisterAll(game);
 
         games.remove(game);
     }

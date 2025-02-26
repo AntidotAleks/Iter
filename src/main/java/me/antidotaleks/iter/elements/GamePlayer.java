@@ -2,7 +2,11 @@ package me.antidotaleks.iter.elements;
 
 import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
+import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.utils.InfoDisplay;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
@@ -34,7 +38,7 @@ public final class GamePlayer implements Listener {
     private int slotSelected = 0;
     private final ArrayList<Map.Entry<GameItem, Point>> itemsUsed = new ArrayList<>();
     // Necessary items
-    private final ItemWalk itemWalk = new ItemWalk(this);
+    private final ItemWalk itemWalk;
 
     // Stats
 
@@ -52,6 +56,9 @@ public final class GamePlayer implements Listener {
         this.game = game;
         modifiers(modifiers, disbalanceModifier);
         infoDisplay = new InfoDisplay(this);
+
+        // Items
+        itemWalk = new ItemWalk(this);
 
         items.add(itemWalk);
     }
@@ -82,7 +89,7 @@ public final class GamePlayer implements Listener {
 
     @EventHandler
     public void playerInteract(PlayerInteractEvent event) {
-        if (!event.getPlayer().equals(player))
+        if (!event.getPlayer().equals(player) || !canPlay)
             return;
 
         Point tilePos = getTilePos();
@@ -91,29 +98,24 @@ public final class GamePlayer implements Listener {
 
         GameItem item = items.get(slotSelected);
 
-        if (item.usable(tilePos)) {
-            itemsUsed.add(Map.entry(item, tilePos));
+        if (!item.usable(tilePos))
+            return;
+        if(!useEnergy(item.getEnergyUsage()))
+            return;
 
-            if (item instanceof PreUsed)
-                ((PreUsed) item).preUse(tilePos);
-        }
+        itemsUsed.add(Map.entry(item, tilePos));
+        this.updateInfo();
+
+        if (item instanceof PreUsed)
+            ((PreUsed) item).preUse(tilePos);
+
 
         Iter.logger.info("Tile pos: [" + tilePos.x + ", " + tilePos.y+"]");
     }
 
     @EventHandler
-    public void nextItem(PlayerSwapHandItemsEvent event) {
-        if (!event.getPlayer().equals(player))
-            return;
-        event.setCancelled(true);
-
-        slotSelected = (slotSelected + 1) % items.size();
-
-    }
-
-    @EventHandler
     public void undo(PlayerDropItemEvent event) {
-        if (!event.getPlayer().equals(player))
+        if (!event.getPlayer().equals(player) || !canPlay)
             return;
         event.setCancelled(true);
 
@@ -125,6 +127,40 @@ public final class GamePlayer implements Listener {
 
         while (!itemsUsed.isEmpty())
             undoLast();
+    }
+
+    @EventHandler
+    public void nextItemAndTurn(PlayerSwapHandItemsEvent event) {
+        if (!event.getPlayer().equals(player))
+            return;
+        event.setCancelled(true);
+
+        if(player.isSneaking()) {
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(
+                            "Finished turn")
+            );
+            finishTurn();
+            return;
+        }
+
+        slotSelected = (slotSelected + 1) % items.size();
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(
+                "Selected item: " + List.of(items.get(slotSelected).getClass().getName().split("\\.")).getLast() +
+                " (" + (slotSelected+1) + "/" + items.size() + ")")
+        );
+    }
+
+    // Turns
+
+    boolean canPlay = false;
+
+    public void startTurn() {
+        canPlay = true;
+    }
+
+    public void finishTurn() {
+        Bukkit.getPluginManager().callEvent(new PlayerFinishTurnEvent(this));
+        canPlay = false;
     }
 
     // Utils
@@ -257,5 +293,9 @@ public final class GamePlayer implements Listener {
 
     public List<Point> getStepPlanning() {
         return itemWalk.getStepPlanning();
+    }
+
+    public int getTeamIndex() {
+        return game.getTeamIndex(player);
     }
 }

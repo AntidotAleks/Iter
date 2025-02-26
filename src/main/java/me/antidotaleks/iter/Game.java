@@ -1,25 +1,35 @@
 package me.antidotaleks.iter;
 
 import me.antidotaleks.iter.elements.GamePlayer;
+import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.maps.Map;
+import me.antidotaleks.iter.utils.TopDisplay;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.Listener;
 
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
-public class Game {
+public class Game implements Listener {
+    // Teams
     private final GamePlayer[][] teams;
     private final Player[][] teamsBukkit;
-    private int currentTeamPlay = 0;
+    // Turns
+    private int currentTeamPlayIndex = 0;
     private final int[] teamPlayOrder;
+    // Map
     private final Map map;
     private final Location mapLocation;
+    // Other
+    TopDisplay topDisplay;
 
     public Game(Player[][] players, Map map) {
         this.map = map;
@@ -52,13 +62,7 @@ public class Game {
         return map;
     }
 
-    /**
-     * Get the map location
-     * @return the map location, not cloned!
-     */
-    public Location getMapLocation() {
-        return mapLocation;
-    }
+
 
     public void start() {
         for (int teamIndex = 0; teamIndex < map.getTeamsAmount(); teamIndex++) {
@@ -78,10 +82,14 @@ public class Game {
 
             }
         }
+
+        topDisplay = new TopDisplay(this);
+        roundStart();
     }
 
     public void stop() {
         map.removeMap(mapLocation);
+        topDisplay.remove();
 
         for (GamePlayer[] team : teams) {
             for (GamePlayer player : team) {
@@ -96,12 +104,59 @@ public class Game {
             }
         }
     }
+
+    public void roundStart() {
+        topDisplay.setTitle("Team "+ currentTeamPlay() +" turn");
+        Arrays.stream(teamsBukkit).flatMap(Arrays::stream).forEach(player -> player.sendTitle(" ", "Team "+ currentTeamPlay() +" turn", 5, 35, 5));
+
+        playersFinishedTurn.addAll(List.of(teams[currentTeamPlay()]));
+
+        for (GamePlayer player : teams[currentTeamPlay()]) {
+            player.startTurn();
+        }
+    }
+
+    ArrayList<GamePlayer> playersFinishedTurn = new ArrayList<>();
+    @EventHandler 
+    public void playerFinishTurn(PlayerFinishTurnEvent event) {
+        Iter.logger.info("pfte called");
+        if(!playersFinishedTurn.contains(event.getPlayer()))
+            return;
+
+        playersFinishedTurn.remove(event.getPlayer());
+
+        Iter.logger.info("Player "+event.getPlayer().getPlayer().getName()+" finished turn. Left: "+playersFinishedTurn.size());
+
+
+        if (!playersFinishedTurn.isEmpty())
+            return;
+
+        stepPlayIndex();
+        roundStart();
+    }
+    
+    // Utils
+
     public int teamDisbalance(int teamI) {
         return 0;
     }
 
     public void stepPlayIndex() {
-        currentTeamPlay = (++currentTeamPlay)%teamPlayOrder.length;
+        currentTeamPlayIndex = (++currentTeamPlayIndex)%teamPlayOrder.length;
+    }
+
+    public int currentTeamPlay() {
+        return teamPlayOrder[currentTeamPlayIndex];
+    }
+
+    // Getters
+
+    /**
+     * Get the map location
+     * @return the map location is not cloned!
+     */
+    public Location getMapLocation() {
+        return mapLocation;
     }
 
     public GamePlayer getPlayer(Player player) {
@@ -135,4 +190,16 @@ public class Game {
                 .orElseThrow(() -> new IllegalArgumentException("Player not in the game"));
     }
 
+    public int getTeamIndex(Player player) {
+        for (int i = 0; i < teamsBukkit.length; i++) {
+            if (Arrays.asList(teamsBukkit[i]).contains(player)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public Player[][] getTeamsBukkit() {
+        return teamsBukkit;
+    }
 }

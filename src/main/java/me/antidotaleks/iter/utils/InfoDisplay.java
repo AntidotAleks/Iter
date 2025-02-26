@@ -41,10 +41,11 @@ public class InfoDisplay {
         int maxHealth = gamePlayer.getMaxHealth();
         int energy = gamePlayer.getEnergy();
         int maxEnergy = gamePlayer.getMaxEnergy();
+        String teamName = "Team "+gamePlayer.getTeamIndex();
 
         // Update scoreboard
-        String infoString = String.format("%s\n"+ ChatColor.of("#ff5252") +"❤%d/%d "+ChatColor.RESET+"| "+ChatColor.of("#5297ff")+"♦ %d/%d\n",
-                        this.player.getName(), health, maxHealth, energy, maxEnergy);
+        String infoString = String.format("%s: %s\n"+ ChatColor.of("#ff5252") +"❤%d/%d "+ChatColor.RESET+"| "+ChatColor.of("#5297ff")+"♦ %d/%d\n",
+                        teamName, this.player.getName(), health, maxHealth, energy, maxEnergy);
 
         infoDisplay.setText(infoString);
     }
