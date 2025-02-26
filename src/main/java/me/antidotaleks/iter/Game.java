@@ -103,6 +103,7 @@ public class Game implements Listener {
                 player.teleport(mapLocation.getWorld().getSpawnLocation());
             }
         }
+
     }
 
     public void roundStart() {

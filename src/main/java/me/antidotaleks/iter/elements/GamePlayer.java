@@ -119,14 +119,19 @@ public final class GamePlayer implements Listener {
             return;
         event.setCancelled(true);
 
+        if(itemsUsed.isEmpty())
+            return;
+
         // If shift+q, undo all
         if (!player.isSneaking()) {
             undoLast();
+            this.updateInfo();
             return;
         }
 
         while (!itemsUsed.isEmpty())
             undoLast();
+        this.updateInfo();
     }
 
     @EventHandler
@@ -179,7 +184,7 @@ public final class GamePlayer implements Listener {
         itemsUsed.removeLast();
     }
 
-    private Point getTilePos() {
+    public Point getTilePos() {
         if (player == null)
             return null;
 
