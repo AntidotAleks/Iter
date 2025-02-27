@@ -142,17 +142,17 @@ public final class GamePlayer implements Listener {
 
         if(player.isSneaking()) {
             player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(
-                            "Finished turn")
-            );
+                "Finished turn"
+            ));
             finishTurn();
             return;
         }
 
         slotSelected = (slotSelected + 1) % items.size();
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(
-                "Selected item: " + List.of(items.get(slotSelected).getClass().getName().split("\\.")).getLast() +
-                " (" + (slotSelected+1) + "/" + items.size() + ")")
-        );
+            "Selected item: " + List.of(items.get(slotSelected).getClass().getName().split("\\.")).getLast() +
+            " (" + (slotSelected+1) + "/" + items.size() + ")"
+        ));
     }
 
     // Turns

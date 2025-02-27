@@ -3,7 +3,7 @@ package me.antidotaleks.iter;
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.maps.Map;
-import me.antidotaleks.iter.utils.TopDisplay;
+import me.antidotaleks.iter.utils.TeamDisplay;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -29,7 +29,7 @@ public class Game implements Listener {
     private final Map map;
     private final Location mapLocation;
     // Other
-    TopDisplay topDisplay;
+    TeamDisplay teamDisplay;
 
     public Game(Player[][] players, Map map) {
         this.map = map;
@@ -83,13 +83,13 @@ public class Game implements Listener {
             }
         }
 
-        topDisplay = new TopDisplay(this);
+        teamDisplay = new TeamDisplay(this);
         roundStart();
     }
 
     public void stop() {
         map.removeMap(mapLocation);
-        topDisplay.remove();
+        teamDisplay.remove();
 
         for (GamePlayer[] team : teams) {
             for (GamePlayer player : team) {
@@ -107,8 +107,8 @@ public class Game implements Listener {
     }
 
     public void roundStart() {
-        topDisplay.setTitle("Team "+ currentTeamPlay() +" turn");
-        Arrays.stream(teamsBukkit).flatMap(Arrays::stream).forEach(player -> player.sendTitle(" ", "Team "+ currentTeamPlay() +" turn", 5, 35, 5));
+        teamDisplay.updateTeamTurn();
+        Arrays.stream(teamsBukkit).flatMap(Arrays::stream).forEach(player -> player.sendTitle(" ", "Team "+ (currentTeamPlay()+1) +" turn", 5, 35, 5));
 
         playersFinishedTurn.addAll(List.of(teams[currentTeamPlay()]));
 
@@ -120,13 +120,15 @@ public class Game implements Listener {
     ArrayList<GamePlayer> playersFinishedTurn = new ArrayList<>();
     @EventHandler 
     public void playerFinishTurn(PlayerFinishTurnEvent event) {
-        Iter.logger.info("pfte called");
         if(!playersFinishedTurn.contains(event.getPlayer()))
             return;
 
         playersFinishedTurn.remove(event.getPlayer());
 
-        Iter.logger.info("Player "+event.getPlayer().getPlayer().getName()+" finished turn. Left: "+playersFinishedTurn.size());
+        Iter.logger.info(String.format(
+                "Player %s finished turn. %s",
+                event.getPlayer().getPlayer().getName(), (playersFinishedTurn.isEmpty()) ? "All players finished their turn" : "Left: " + playersFinishedTurn.size()
+        ));
 
 
         if (!playersFinishedTurn.isEmpty())
@@ -148,6 +150,10 @@ public class Game implements Listener {
 
     public int currentTeamPlay() {
         return teamPlayOrder[currentTeamPlayIndex];
+    }
+
+    public int teamAmount() {
+        return teams.length;
     }
 
     // Getters
@@ -202,5 +208,44 @@ public class Game implements Listener {
 
     public Player[][] getTeamsBukkit() {
         return teamsBukkit;
+    }
+
+    public enum TeamColor {
+        // Pastel colors
+        RED    (new Color(217, 93,  93 ),
+                new Color(236, 204, 204)),
+        BLUE   (new Color(63 , 130, 207),
+                new Color(194, 211, 230)),
+        GREEN  (new Color(121, 211, 62 ),
+                new Color(202, 227, 186)),
+        YELLOW (new Color(232, 196, 60 ),
+                new Color(230, 222, 189)),
+        PINK   (new Color(227, 106, 185),
+                new Color(237, 195, 222)),
+        ORANGE (new Color(219, 133, 37 ),
+                new Color(228, 206, 182)),
+        CYAN   (new Color(100, 196, 228),
+                new Color(210, 229, 236)),
+        PURPLE (new Color(148, 93 , 207),
+                new Color(205, 184, 225)),
+        WHITE  (new Color(236, 240, 241),
+                new Color(248, 248, 250)),
+        BLACK  (new Color(52 , 73 , 94 ),
+                new Color(213, 213, 216)),
+        ;
+
+        public final Color color, lightColor;
+        TeamColor(Color color, Color lightColor) {
+            this.color = color;
+            this.lightColor = lightColor;
+        }
+
+        public static TeamColor[] getColors(int teamAmount) {
+            TeamColor[] colors = new TeamColor[teamAmount];
+            for (int i = 0; i < teamAmount; i++) {
+                colors[i] = values()[i];
+            }
+            return colors;
+        }
     }
 }
