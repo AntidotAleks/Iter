@@ -22,6 +22,7 @@ public class Game implements Listener {
     // Teams
     private final GamePlayer[][] teams;
     private final Player[][] teamsBukkit;
+    private final TeamDetails[] teamDetails;
     // Turns
     private int currentTeamPlayIndex = 0;
     private final int[] teamPlayOrder;
@@ -34,28 +35,43 @@ public class Game implements Listener {
     public Game(Player[][] players, Map map) {
         this.map = map;
         this.mapLocation = map.buildMap();
-        this.teams = new GamePlayer[players.length][];
-        this.teamsBukkit = players;
         this.teamPlayOrder = map.teamPlayOrder();
+        this.teamDetails = TeamDetails.getColors(players.length);
 
+        // shuffle by teamPlayOrder
+        this.teamsBukkit = new Player[players.length][];
+        for (int i = 0; i < players.length; i++) {
+            this.teamsBukkit[i] = players[teamPlayOrder[i]];
+        }
 
-        for (int i = 0; i < teamsBukkit.length; i++) {
+        // Create GamePlayers and register events
+        this.teams = new GamePlayer[players.length][];
+        for (int teamIndex = 0; teamIndex < teamsBukkit.length; teamIndex++) {
 
-            Player[] team = teamsBukkit[i];
-            int tempI = i;
-            teams[i] = Arrays.stream(teamsBukkit[i])
-                    .map(player -> new GamePlayer(player, this, map.getModifiers(tempI), 0))
-                    .toArray(GamePlayer[]::new);
+            Player[] team = teamsBukkit[teamIndex];
+            int tempI = teamIndex;
 
             for (Player player : team) {
                 player.setGameMode(GameMode.ADVENTURE);
                 player.setAllowFlight(true);
+                player.setFlying(false);
+                player.teleport(mapLocation);
             }
 
-            for (GamePlayer gamePlayer : teams[i]) {
+            teams[teamIndex] = Arrays.stream(teamsBukkit[teamIndex])
+                    .map(player -> new GamePlayer(player, this, map.getModifiers(tempI), 0))
+                    .toArray(GamePlayer[]::new);
+
+
+            for (int gamePlayerIndex = 0; gamePlayerIndex < teams[teamIndex].length; gamePlayerIndex++) {
+                GamePlayer gamePlayer = teams[teamIndex][gamePlayerIndex];
                 Bukkit.getPluginManager().registerEvents(gamePlayer, Iter.plugin);
+
+                Point spawnPoint = map.getSpawnPoints(teamIndex).get(gamePlayerIndex);
+                gamePlayer.setPosition(spawnPoint);
             }
         }
+
     }
 
     public Map getMap() {
@@ -106,14 +122,33 @@ public class Game implements Listener {
 
     }
 
-    public void roundStart() {
+    private void roundStart() {
         teamDisplay.updateTeamTurn();
-        Arrays.stream(teamsBukkit).flatMap(Arrays::stream).forEach(player -> player.sendTitle(" ", "Team "+ (currentTeamPlay()+1) +" turn", 5, 35, 5));
+        getAllPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamDetails[currentTeamPlay()].toString() +" turn", 5, 35, 5));
 
         playersFinishedTurn.addAll(List.of(teams[currentTeamPlay()]));
 
         for (GamePlayer player : teams[currentTeamPlay()]) {
             player.startTurn();
+        }
+    }
+
+    private void roundEnd() {
+        while(true) {
+            boolean allItemsUsed = true;
+
+            for (GamePlayer player : teams[currentTeamPlay()]) {
+                allItemsUsed = !player.useNextItem() && allItemsUsed;
+                // Becomes false if at least 1 player had an item to use
+            }
+
+            if(allItemsUsed)
+                break;
+        }
+
+        for (GamePlayer player : teams[currentTeamPlay()]) {
+            player.setEnergy(player.getMaxEnergy());
+            player.updateInfo();
         }
     }
 
@@ -134,6 +169,7 @@ public class Game implements Listener {
         if (!playersFinishedTurn.isEmpty())
             return;
 
+        roundEnd();
         stepPlayIndex();
         roundStart();
     }
@@ -149,11 +185,17 @@ public class Game implements Listener {
     }
 
     public int currentTeamPlay() {
-        return teamPlayOrder[currentTeamPlayIndex];
+        return currentTeamPlayIndex;
     }
 
     public int teamAmount() {
         return teams.length;
+    }
+
+    public Location toWorldLocation(Point point) {
+        if (point == null)
+            return null;
+        return mapLocation.clone().add(point.x*3+5.5, 1, point.y*3+5.5);
     }
 
     // Getters
@@ -210,7 +252,19 @@ public class Game implements Listener {
         return teamsBukkit;
     }
 
-    public enum TeamColor {
+    public TeamDetails[] getTeamDetails() {
+        return teamDetails;
+    }
+
+    public TeamDetails getTeamDetails(Player player) {
+        return teamDetails[getTeamIndex(player)];
+    }
+
+    public List<Player> getAllPlayers() {
+        return Arrays.stream(teamsBukkit).flatMap(Arrays::stream).toList();
+    }
+
+    public enum TeamDetails {
         // Pastel colors
         RED    (new Color(217, 93,  93 ),
                 new Color(236, 204, 204)),
@@ -222,10 +276,10 @@ public class Game implements Listener {
                 new Color(230, 222, 189)),
         PINK   (new Color(227, 106, 185),
                 new Color(237, 195, 222)),
-        ORANGE (new Color(219, 133, 37 ),
-                new Color(228, 206, 182)),
         CYAN   (new Color(100, 196, 228),
                 new Color(210, 229, 236)),
+        ORANGE (new Color(219, 133, 37 ),
+                new Color(228, 206, 182)),
         PURPLE (new Color(148, 93 , 207),
                 new Color(205, 184, 225)),
         WHITE  (new Color(236, 240, 241),
@@ -235,16 +289,17 @@ public class Game implements Listener {
         ;
 
         public final Color color, lightColor;
-        TeamColor(Color color, Color lightColor) {
+        TeamDetails(Color color, Color lightColor) {
             this.color = color;
             this.lightColor = lightColor;
         }
 
-        public static TeamColor[] getColors(int teamAmount) {
-            TeamColor[] colors = new TeamColor[teamAmount];
-            for (int i = 0; i < teamAmount; i++) {
-                colors[i] = values()[i];
-            }
+        public static TeamDetails[] getColors(int teamAmount) {
+            if(teamAmount > values().length)
+                throw new IllegalArgumentException("Too many teams");
+
+            TeamDetails[] colors = new TeamDetails[teamAmount];
+            System.arraycopy(values(), 0, colors, 0, teamAmount);
             return colors;
         }
     }

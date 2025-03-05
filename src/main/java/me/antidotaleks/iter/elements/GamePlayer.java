@@ -4,18 +4,21 @@ import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.utils.InfoDisplay;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.*;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.util.RayTraceResult;
 
 import java.awt.*;
@@ -32,6 +35,7 @@ public final class GamePlayer implements Listener {
     private final Game game;
     private final InfoDisplay infoDisplay;
     private final Point pos = new Point(0, 0);
+    private final Game.TeamDetails teamDetails;
 
     // Items
 
@@ -39,7 +43,7 @@ public final class GamePlayer implements Listener {
     private int slotSelected = 0;
     private final ArrayList<Map.Entry<GameItem, Point>> itemsUsed = new ArrayList<>();
     // Necessary items
-    private final ItemWalk itemWalk;
+    protected final ItemWalk itemWalk;
 
     // Stats
 
@@ -56,12 +60,16 @@ public final class GamePlayer implements Listener {
         this.player = player;
         this.game = game;
         modifiers(modifiers, disbalanceModifier);
+        teamDetails = game.getTeamDetails(player);
         infoDisplay = new InfoDisplay(this);
+
+        player.setPlayerListName(ChatColor.of(teamDetails.color) +"["+teamDetails+"] "+ ChatColor.of(teamDetails.lightColor) + player.getName());
 
         // Items
         itemWalk = new ItemWalk(this);
 
         items.add(itemWalk);
+        items.add(new ItemBasePunch(this));
     }
 
 
@@ -88,7 +96,7 @@ public final class GamePlayer implements Listener {
         if (!event.getPlayer().equals(player) || !canPlay)
             return;
 
-        Point tilePos = getLookTilePos();
+        Point tilePos = getLookTilePosition();
         if (tilePos == null)
             return;
 
@@ -106,7 +114,7 @@ public final class GamePlayer implements Listener {
             ((PreUsed) item).preUse(tilePos);
 
 
-        Iter.logger.info("Tile pos: [" + tilePos.x + ", " + tilePos.y+"]");
+        Iter.logger.info("Interact at tile pos: [" + tilePos.x + ", " + tilePos.y+"]");
     }
 
     @EventHandler
@@ -155,34 +163,23 @@ public final class GamePlayer implements Listener {
     private Pig fakePlayer;
     @EventHandler
     public void flightChange(PlayerToggleFlightEvent event) {
+        if (!event.getPlayer().equals(player))
+            return;
+
         if (event.isFlying()) {
             isFlying = true;
             fillTileAround(false);
 
-            fakePlayer = Iter.overworld.spawn(getWorldPos(), Pig.class);
+            fakePlayer = Iter.overworld.spawn(getWorldPosition(), Pig.class);
             fakePlayer.setAI(false);
         } else {
             isFlying = false;
             fillTileAround(true);
+            player.teleport(getWorldPosition());
 
             if(fakePlayer != null)
                 fakePlayer.remove();
         }
-    }
-
-    private BlockDisplay lookAtDisplay;
-    @EventHandler
-    public void lookAround(PlayerMoveEvent event) {
-        if(!canPlay || lookAtDisplay == null)
-            return;
-
-        Location lookLoc = getLookTileWorldPos();
-        if(lookLoc == null)
-            return;
-
-        lookAtDisplay.setTeleportDuration(59);
-
-        lookAtDisplay.teleport(lookLoc);
     }
 
     // Turns
@@ -191,24 +188,39 @@ public final class GamePlayer implements Listener {
 
     public void startTurn() {
         canPlay = true;
+        infoDisplay.showCursor();
     }
 
     public void finishTurn() {
-        Bukkit.getPluginManager().callEvent(new PlayerFinishTurnEvent(this));
         canPlay = false;
+        infoDisplay.hideCursor();
+
+        Bukkit.getPluginManager().callEvent(new PlayerFinishTurnEvent(this));
     }
 
     // Utils
 
-    public Point getPosition() {
-        return pos;
+    public void updateInfo() {
+        infoDisplay.updateData();
     }
 
-    public Location getWorldPos() {
-        Location mapLoc = game.getMapLocation();
-        return new Location(mapLoc.getWorld(),
-                mapLoc.getX() + pos.getX()*3, mapLoc.getY(), mapLoc.getZ() + pos.getY() * 3
-        );
+    public void stop() {
+        infoDisplay.remove();
+        if(fakePlayer != null)
+            fakePlayer.remove();
+    }
+
+    public boolean useNextItem() {
+        if (itemsUsed.isEmpty())
+            return false;
+
+        GameItem item = itemsUsed.getFirst().getKey();
+        item.use(itemsUsed.getFirst().getValue());
+        itemsUsed.removeFirst();
+
+        Iter.logger.info("Used item: " + item.getClass().getName()+", now updating info");
+        updateInfo();
+        return true;
     }
 
     private void undoLast() {
@@ -221,56 +233,13 @@ public final class GamePlayer implements Listener {
         itemsUsed.removeLast();
     }
 
-    public Point getLookTilePos() {
-        if (player == null)
-            return null;
-
-        if (player.getLocation().getPitch() <= 0) // cancel if player looks up
-            return null;
-
-
-        RayTraceResult result = player.rayTraceBlocks(66);
-        if (result == null || result.getHitBlock() == null || result.getHitBlock().getLocation().getBlockY() != 0)
-            return null;
-
-        Location interactLoc = result.getHitBlock().getLocation();
-        interactLoc.subtract(this.game.getMapLocation()).subtract(4, 0, 4).multiply(1d/3);
-
-        Point coords = new Point(interactLoc.getBlockX(), interactLoc.getBlockZ());
-
-        if(game.getMap().isWall(coords.x, coords.y))
-            return null;
-
-        return coords;
-    }
-
-    public Location getLookTileWorldPos() {
-        Point lookTilePos = getLookTilePos();
-        if (lookTilePos == null)
-            return null;
-
-        Location mapLoc = game.getMapLocation();
-        return new Location(mapLoc.getWorld(),
-                mapLoc.getX() + lookTilePos.getX()*3, mapLoc.getY(), mapLoc.getZ() + lookTilePos.getY() * 3
-        );
-    }
-
-    public void updateInfo() {
-        infoDisplay.updateData();
-    }
-
-    public void stop() {
-        infoDisplay.remove();
-    }
-
     private void fillTileAround(boolean blocked) {
-        Location tilePos = getWorldPos();
-        Iter.logger.info(tilePos.toString());
+        Location tilePos = getWorldPosition();
 
         BlockData from = blocked ? Iter.AIR_DATA : Iter.BARRIER_DATA,
-                to = blocked ? Iter.BARRIER_DATA : Iter.AIR_DATA;
+                    to = blocked ? Iter.BARRIER_DATA : Iter.AIR_DATA;
 
-        tilePos.add(-2, 2, -1);
+        tilePos.add(-2, 1, -1);
 
         for (int i = 0; i < 3; i++) {
             replaceFromTo(tilePos, from, to);
@@ -293,6 +262,51 @@ public final class GamePlayer implements Listener {
     }
 
     // Getters/Setters
+
+    public Point getPosition() {
+        return pos;
+    }
+
+    public void setPosition(Point pos) {
+        this.pos.setLocation(pos);
+
+
+        if(fakePlayer != null) {
+            fakePlayer.teleport(game.toWorldLocation(pos));
+        }
+    }
+
+    public Location getWorldPosition() {
+        return game.toWorldLocation(pos);
+    }
+
+    public Point getLookTilePosition() {
+        if (player == null)
+            return null;
+
+        if (player.getLocation().getPitch() <= 0) // cancel if player looks up
+            return null;
+
+
+        RayTraceResult result = player.rayTraceBlocks(66);
+        if (result == null || result.getHitBlock() == null || result.getHitBlock().getLocation().getBlockY() != 0)
+            return null;
+
+        Location interactLoc = result.getHitBlock().getLocation();
+        interactLoc.subtract(this.game.getMapLocation()).subtract(4, 0, 4).multiply(1d/3);
+
+        Point coords = new Point(interactLoc.getBlockX(), interactLoc.getBlockZ());
+
+        if(game.getMap().isWall(coords.x, coords.y))
+            return null;
+
+        return coords;
+    }
+
+    public Location getLookTileWorldPosition() {
+        Point lookTilePos = getLookTilePosition();
+        return game.toWorldLocation(lookTilePos);
+    }
 
     public InfoDisplay getInfoDisplay() {
         return infoDisplay;
@@ -378,6 +392,10 @@ public final class GamePlayer implements Listener {
 
     public int getTeamIndex() {
         return game.getTeamIndex(player);
+    }
+
+    public Game.TeamDetails getTeamDetails() {
+        return teamDetails;
     }
 
     public boolean isFlying() {

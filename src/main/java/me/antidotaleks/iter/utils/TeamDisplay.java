@@ -28,18 +28,18 @@ public class TeamDisplay {
     // Utils
 
     public void updateTeamTurn() {
-        for (int i = 0; i < bossBars.length; i++) {
-            BossBar bossBar = bossBars[i];
-            int currentTeamIndex = game.currentTeamPlay();
+        for (int bossbarIndex = 0; bossbarIndex < bossBars.length; bossbarIndex++) {
+            BossBar bossBar = bossBars[bossbarIndex];
+            int currentTeamPlayIndex = game.currentTeamPlay();
             int teamsAmount = game.teamAmount();
 
-            if (i == currentTeamIndex)
+            if (bossbarIndex == currentTeamPlayIndex)
                 bossBar.setTitle("Your turn");
             else {
-                int inXTurns = (i - currentTeamIndex + teamsAmount) % teamsAmount;
+                int inXTurns = (bossbarIndex - currentTeamPlayIndex + teamsAmount) % teamsAmount;
                 bossBar.setTitle(String.format(
-                        "Team %d's turn (Yours in %d turn%s)",
-                        currentTeamIndex + 1, inXTurns, inXTurns == 1 ? "" : "s"
+                        "Team %s's turn (Yours in %d turn%s)",
+                        game.getTeamDetails()[currentTeamPlayIndex], inXTurns, inXTurns == 1 ? "" : "s"
                 ));
             }
         }

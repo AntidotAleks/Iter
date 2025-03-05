@@ -1,10 +1,8 @@
 package me.antidotaleks.iter.elements;
 
-import java.awt.Point;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.awt.*;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 public class ItemWalk extends GameItem implements PreUsed {
     /**
@@ -22,17 +20,17 @@ public class ItemWalk extends GameItem implements PreUsed {
 
     @Override
     public boolean usable(Point coords) {
-        if(player.getPosition().distance(coords) > 1.1 || player.getPosition().equals(coords))
+        // Walkable distance is 1 tile
+        if(tilesAway(getCurrentPosition(), coords) != 1)
             return false;
 
-        // Can't walk on non-empty tiles
-        if (!TargetSelector.isEmptyGround(coords, player))
+        // Check if the player is not overlapping with players from other teams
+        if (!isWalkable(coords))
             return false;
 
-        // Get current step to not overlap with other players
+        // Check if the player is not overlapping with players in the same team at the same step at given coordinates
         int step = player.getItemsUsed().size();
 
-        // Check if the player is not overlapping with other players at the same step at given coordinates
         for (GamePlayer teammate : player.getTeam()) {
             if (teammate == player)
                 continue;
@@ -52,6 +50,11 @@ public class ItemWalk extends GameItem implements PreUsed {
         return true;
     }
 
+    private boolean isWalkable(Point coords) {
+        GamePlayer other = player.getGame().getPlayer(coords);
+        return other == null || Arrays.stream(player.getTeam()).anyMatch(p -> p == other);
+    }
+
     private ArrayList<Integer> getStepList(List<Map.Entry<GameItem, Point>> uses) {
         // Each value = previous value + 1 if current GameItem is ItemWalk
         ArrayList<Integer> steps = new ArrayList<>();
@@ -61,7 +64,6 @@ public class ItemWalk extends GameItem implements PreUsed {
 
         return steps;
     }
-
 
     private final ArrayList<Point> nextStep = new ArrayList<>();
 
@@ -81,7 +83,7 @@ public class ItemWalk extends GameItem implements PreUsed {
 
     @Override
     public void use(Point coords) {
-        player.getPosition().setLocation(nextStep.getFirst());
+        player.setPosition(nextStep.getFirst());
         nextStep.removeFirst();
     }
 }

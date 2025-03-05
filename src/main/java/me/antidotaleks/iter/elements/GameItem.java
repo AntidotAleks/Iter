@@ -2,8 +2,9 @@ package me.antidotaleks.iter.elements;
 
 import me.antidotaleks.iter.maps.Map;
 
-import java.awt.*;
+import java.awt.Point;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Base class for all game items
@@ -21,6 +22,18 @@ public abstract class GameItem implements GameItemInterface {
     public GameItem(GamePlayer player) {
         this.player = player;
         this.map = player.getGame().getMap();
+    }
+
+    protected int tilesAway(Point coords1, Point coords2) {
+        return Math.abs(coords1.x-coords2.x) + Math.abs(coords1.y-coords2.y);
+    }
+
+    protected Point getCurrentPosition() {
+        List<Point> stepPlanning = player.itemWalk.getStepPlanning();
+        if (stepPlanning.isEmpty())
+            return player.getPosition();
+
+        return stepPlanning.getLast();
     }
 
     public enum TargetSelector {
