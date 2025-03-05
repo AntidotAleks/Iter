@@ -4,6 +4,7 @@ import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -147,8 +148,13 @@ public final class Teaming implements Listener {
 
     @EventHandler
     public static void onPlayerJoin(PlayerJoinEvent event) {
-        teams.put(event.getPlayer(), new ArrayList<>());
-        SetupManager.hideNameTeam.addEntry(event.getPlayer().getName());
+        Player player = event.getPlayer();
+
+        teams.put(player, new ArrayList<>());
+        SetupManager.hideNameTeam.addEntry(player.getName());
+
+        player.getAttribute(Attribute.PLAYER_BLOCK_INTERACTION_RANGE).setBaseValue(0);
+        player.getAttribute(Attribute.PLAYER_ENTITY_INTERACTION_RANGE).setBaseValue(0);
     }
 
     @EventHandler

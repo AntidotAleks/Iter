@@ -19,7 +19,7 @@ public final class Iter extends JavaPlugin {
         logger = Logger.getLogger("Iter");
         overworld = Bukkit.getWorlds().getFirst();
         pluginFolder = getDataFolder();
-        // ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
+        ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
 
         Iter.logger.info("[Iter] Registering event listeners");
         SetupManager.registerListeners();

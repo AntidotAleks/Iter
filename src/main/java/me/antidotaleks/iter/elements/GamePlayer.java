@@ -2,6 +2,8 @@ package me.antidotaleks.iter.elements;
 
 import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
+import me.antidotaleks.iter.elements.items.ItemBasePunch;
+import me.antidotaleks.iter.elements.items.ItemWalk;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.utils.InfoDisplay;
 import net.md_5.bungee.api.ChatColor;
@@ -11,6 +13,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -19,6 +22,7 @@ import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.RayTraceResult;
 
 import java.awt.*;
@@ -93,9 +97,14 @@ public final class GamePlayer implements Listener {
 
     @EventHandler
     public void playerInteract(PlayerInteractEvent event) {
-        if (!event.getPlayer().equals(player) || !canPlay)
+        if (!event.getPlayer().equals(player) || !canPlay || event.getHand() != EquipmentSlot.HAND)
             return;
 
+        Iter.logger.info(String.valueOf(event.getAction()));
+        interact();
+    }
+
+    private void interact() {
         Point tilePos = getLookTilePosition();
         if (tilePos == null)
             return;
@@ -119,9 +128,13 @@ public final class GamePlayer implements Listener {
 
     @EventHandler
     public void undo(PlayerDropItemEvent event) {
-        if (!event.getPlayer().equals(player) || !canPlay)
+        if (!event.getPlayer().equals(player))
             return;
+
         event.setCancelled(true);
+
+        if (!canPlay)
+            return;
 
         if(itemsUsed.isEmpty())
             return;
@@ -175,7 +188,7 @@ public final class GamePlayer implements Listener {
         } else {
             isFlying = false;
             fillTileAround(true);
-            player.teleport(getWorldPosition());
+            teleport(getWorldPosition());
 
             if(fakePlayer != null)
                 fakePlayer.remove();
@@ -219,7 +232,6 @@ public final class GamePlayer implements Listener {
         itemsUsed.removeFirst();
 
         Iter.logger.info("Used item: " + item.getClass().getName()+", now updating info");
-        updateInfo();
         return true;
     }
 
@@ -261,6 +273,14 @@ public final class GamePlayer implements Listener {
             player.sendBlockChange(loc, to);
     }
 
+    public void teleport(Location loc) {
+        List<Entity> passengers = player.getPassengers();
+        passengers.forEach(player::removePassenger);
+        loc.setDirection(player.getLocation().getDirection());
+        player.teleport(loc);
+        passengers.forEach(player::addPassenger);
+    }
+
     // Getters/Setters
 
     public Point getPosition() {
@@ -270,10 +290,13 @@ public final class GamePlayer implements Listener {
     public void setPosition(Point pos) {
         this.pos.setLocation(pos);
 
-
         if(fakePlayer != null) {
-            fakePlayer.teleport(game.toWorldLocation(pos));
-        }
+            Location newPos = game.toWorldLocation(pos);
+            // Rotate to face the walking direction
+            newPos.setDirection(newPos.clone().subtract(fakePlayer.getLocation()).toVector());
+            fakePlayer.teleport(newPos);
+        } else
+            teleport(getWorldPosition());
     }
 
     public Location getWorldPosition() {

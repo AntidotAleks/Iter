@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -134,7 +135,8 @@ public class Game implements Listener {
     }
 
     private void roundEnd() {
-        while(true) {
+
+        new BukkitRunnable() { @Override public void run() {
             boolean allItemsUsed = true;
 
             for (GamePlayer player : teams[currentTeamPlay()]) {
@@ -142,14 +144,17 @@ public class Game implements Listener {
                 // Becomes false if at least 1 player had an item to use
             }
 
-            if(allItemsUsed)
-                break;
-        }
+            if(allItemsUsed) {
+                for (GamePlayer player : teams[currentTeamPlay()]) {
+                    player.setEnergy(player.getMaxEnergy());
+                    player.updateInfo();
+                }
 
-        for (GamePlayer player : teams[currentTeamPlay()]) {
-            player.setEnergy(player.getMaxEnergy());
-            player.updateInfo();
-        }
+                cancel();
+                stepPlayIndex();
+                roundStart();
+            }
+        }}.runTaskTimer(Iter.plugin, 0, 10);
     }
 
     ArrayList<GamePlayer> playersFinishedTurn = new ArrayList<>();
@@ -170,8 +175,6 @@ public class Game implements Listener {
             return;
 
         roundEnd();
-        stepPlayIndex();
-        roundStart();
     }
     
     // Utils

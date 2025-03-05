@@ -3,7 +3,7 @@ version: '0.0.1'
 main: me.antidotaleks.iter.Iter
 api-version: '1.21'
 authors: [AntidotAleks]
-#depend: [ ProtocolLib ]
+depend: [ ProtocolLib ]
 commands:
   iqueue:
     description: Start a queue.
