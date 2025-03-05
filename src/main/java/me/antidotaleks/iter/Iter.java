@@ -1,5 +1,7 @@
 package me.antidotaleks.iter;
 
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
