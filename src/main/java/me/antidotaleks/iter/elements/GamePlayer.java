@@ -10,14 +10,12 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.BlockDisplay;
 import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
-import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.util.RayTraceResult;
 
 import java.awt.*;
@@ -90,7 +88,7 @@ public final class GamePlayer implements Listener {
         if (!event.getPlayer().equals(player) || !canPlay)
             return;
 
-        Point tilePos = getTilePos();
+        Point tilePos = getLookTilePos();
         if (tilePos == null)
             return;
 
@@ -161,7 +159,7 @@ public final class GamePlayer implements Listener {
             isFlying = true;
             fillTileAround(false);
 
-            fakePlayer = Iter.overworld.spawn(getTileWorldPos(), Pig.class);
+            fakePlayer = Iter.overworld.spawn(getWorldPos(), Pig.class);
             fakePlayer.setAI(false);
         } else {
             isFlying = false;
@@ -170,6 +168,21 @@ public final class GamePlayer implements Listener {
             if(fakePlayer != null)
                 fakePlayer.remove();
         }
+    }
+
+    private BlockDisplay lookAtDisplay;
+    @EventHandler
+    public void lookAround(PlayerMoveEvent event) {
+        if(!canPlay || lookAtDisplay == null)
+            return;
+
+        Location lookLoc = getLookTileWorldPos();
+        if(lookLoc == null)
+            return;
+
+        lookAtDisplay.setTeleportDuration(59);
+
+        lookAtDisplay.teleport(lookLoc);
     }
 
     // Turns
@@ -191,6 +204,13 @@ public final class GamePlayer implements Listener {
         return pos;
     }
 
+    public Location getWorldPos() {
+        Location mapLoc = game.getMapLocation();
+        return new Location(mapLoc.getWorld(),
+                mapLoc.getX() + pos.getX()*3, mapLoc.getY(), mapLoc.getZ() + pos.getY() * 3
+        );
+    }
+
     private void undoLast() {
         this.restoreEnergy(itemsUsed.getLast().getKey().getEnergyUsage());
 
@@ -201,7 +221,7 @@ public final class GamePlayer implements Listener {
         itemsUsed.removeLast();
     }
 
-    public Point getTilePos() {
+    public Point getLookTilePos() {
         if (player == null)
             return null;
 
@@ -224,10 +244,14 @@ public final class GamePlayer implements Listener {
         return coords;
     }
 
-    public Location getTileWorldPos() {
+    public Location getLookTileWorldPos() {
+        Point lookTilePos = getLookTilePos();
+        if (lookTilePos == null)
+            return null;
+
         Location mapLoc = game.getMapLocation();
         return new Location(mapLoc.getWorld(),
-                mapLoc.getX() + pos.getX()*3, mapLoc.getY(), mapLoc.getZ() + pos.getY() * 3
+                mapLoc.getX() + lookTilePos.getX()*3, mapLoc.getY(), mapLoc.getZ() + lookTilePos.getY() * 3
         );
     }
 
@@ -240,7 +264,7 @@ public final class GamePlayer implements Listener {
     }
 
     private void fillTileAround(boolean blocked) {
-        Location tilePos = getTileWorldPos();
+        Location tilePos = getWorldPos();
         Iter.logger.info(tilePos.toString());
 
         BlockData from = blocked ? Iter.AIR_DATA : Iter.BARRIER_DATA,
