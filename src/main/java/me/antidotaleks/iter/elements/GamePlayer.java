@@ -8,16 +8,19 @@ import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.util.RayTraceResult;
 
-import java.awt.Point;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -66,9 +69,6 @@ public final class GamePlayer implements Listener {
 
 
     public void modifiers(ConfigurationSection modifiers, double disbalanceModifier) {
-        if (modifiers == null)
-            modifiers = null;
-
         maxHealth = (int) Math.round(
                 maxHealth * modifiers.getDouble("health", 1) * ( disbalanceModifier*.5 + 1 )
         );
@@ -81,8 +81,6 @@ public final class GamePlayer implements Listener {
         flatDamage = (int) Math.round(
                 flatDamage + modifiers.getDouble("flatDamage", 0) + disbalanceModifier
         );
-
-
     }
 
     // Events
@@ -155,6 +153,25 @@ public final class GamePlayer implements Listener {
         ));
     }
 
+    private boolean isFlying = false;
+    private Pig fakePlayer;
+    @EventHandler
+    public void flightChange(PlayerToggleFlightEvent event) {
+        if (event.isFlying()) {
+            isFlying = true;
+            fillTileAround(false);
+
+            fakePlayer = Iter.overworld.spawn(getTileWorldPos(), Pig.class);
+            fakePlayer.setAI(false);
+        } else {
+            isFlying = false;
+            fillTileAround(true);
+
+            if(fakePlayer != null)
+                fakePlayer.remove();
+        }
+    }
+
     // Turns
 
     boolean canPlay = false;
@@ -207,12 +224,48 @@ public final class GamePlayer implements Listener {
         return coords;
     }
 
+    public Location getTileWorldPos() {
+        Location mapLoc = game.getMapLocation();
+        return new Location(mapLoc.getWorld(),
+                mapLoc.getX() + pos.getX()*3, mapLoc.getY(), mapLoc.getZ() + pos.getY() * 3
+        );
+    }
+
     public void updateInfo() {
         infoDisplay.updateData();
     }
 
     public void stop() {
         infoDisplay.remove();
+    }
+
+    private void fillTileAround(boolean blocked) {
+        Location tilePos = getTileWorldPos();
+        Iter.logger.info(tilePos.toString());
+
+        BlockData from = blocked ? Iter.AIR_DATA : Iter.BARRIER_DATA,
+                to = blocked ? Iter.BARRIER_DATA : Iter.AIR_DATA;
+
+        tilePos.add(-2, 2, -1);
+
+        for (int i = 0; i < 3; i++) {
+            replaceFromTo(tilePos, from, to);
+            tilePos.add(4, 0, 0);
+            replaceFromTo(tilePos, from, to);
+            tilePos.add(-4, 0, 1);
+        }
+        for (int i = 0; i < 3; i++) {
+            tilePos.add(1, 0, -4);
+            replaceFromTo(tilePos, from, to);
+            tilePos.add(0, 0, 4);
+            replaceFromTo(tilePos, from, to);
+        }
+
+    }
+
+    private void replaceFromTo(Location loc, BlockData from, BlockData to) {
+        if(loc.getBlock().getBlockData().equals(from))
+            player.sendBlockChange(loc, to);
     }
 
     // Getters/Setters
@@ -243,7 +296,6 @@ public final class GamePlayer implements Listener {
     public void heal(int amount) {
         setHealth(health + amount);
     }
-
 
     public int getMaxEnergy() {
         return maxEnergy;
@@ -302,5 +354,9 @@ public final class GamePlayer implements Listener {
 
     public int getTeamIndex() {
         return game.getTeamIndex(player);
+    }
+
+    public boolean isFlying() {
+        return isFlying;
     }
 }

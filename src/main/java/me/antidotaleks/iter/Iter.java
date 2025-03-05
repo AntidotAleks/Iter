@@ -1,7 +1,9 @@
 package me.antidotaleks.iter;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -48,4 +50,8 @@ public final class Iter extends JavaPlugin {
     public static Logger logger;
     public static World overworld;
     public static File pluginFolder;
+
+
+    public static final BlockData AIR_DATA = Bukkit.createBlockData(Material.AIR);
+    public static final BlockData BARRIER_DATA = Bukkit.createBlockData(Material.BARRIER);
 }

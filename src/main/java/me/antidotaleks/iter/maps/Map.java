@@ -2,7 +2,6 @@ package me.antidotaleks.iter.maps;
 
 import com.google.common.base.Preconditions;
 import me.antidotaleks.iter.Iter;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.data.BlockData;
@@ -39,6 +38,7 @@ public class Map {
         Preconditions.checkArgument(yaml.getString("map") != null, "Map data is missing");
 
         mapName = mapFile.getName().replace(".yaml", "");
+        //noinspection DataFlowIssue
         String mapDataStr = yaml.getString("map").replace(" ", "");
         mapData = mapDataStr.split("\n");
         int[] uniqueTeams = mapDataStr.chars().filter(Character::isDigit).distinct().toArray();
@@ -231,7 +231,7 @@ public class Map {
         for (int y = start.getBlockY(); y <= end.getBlockY(); y++)
         for (int z = start.getBlockZ(); z <= end.getBlockZ(); z++) {
             if (Iter.overworld.getBlockData(x,y,z).getMaterial() != Material.AIR)
-                Iter.overworld.setBlockData(x,y,z, air);
+                Iter.overworld.setBlockData(x,y,z, Iter.AIR_DATA);
         }
     }
 
@@ -240,8 +240,6 @@ public class Map {
     private char getChar(int x, int y) {
         return mapData[y].charAt(x);
     }
-
-    private static final BlockData air = Bukkit.createBlockData(Material.AIR);
 
     private static int i = 0;
     private static Location getNewMapLocation() {
