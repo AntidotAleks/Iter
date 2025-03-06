@@ -21,7 +21,7 @@ public final class Iter extends JavaPlugin {
         logger = Logger.getLogger("Iter");
         overworld = Bukkit.getWorlds().getFirst();
         pluginFolder = getDataFolder();
-        ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
+        protocolManager = ProtocolLibrary.getProtocolManager();
 
         Iter.logger.info("[Iter] Registering event listeners");
         SetupManager.registerListeners();
@@ -52,6 +52,7 @@ public final class Iter extends JavaPlugin {
     public static Logger logger;
     public static World overworld;
     public static File pluginFolder;
+    public static ProtocolManager protocolManager;
 
 
     public static final BlockData AIR_DATA = Bukkit.createBlockData(Material.AIR);
