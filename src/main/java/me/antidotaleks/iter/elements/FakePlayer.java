@@ -3,14 +3,11 @@ package me.antidotaleks.iter.elements;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.EnumWrappers;
-import com.comphenix.protocol.wrappers.PlayerInfoData;
 import com.comphenix.protocol.wrappers.WrappedGameProfile;
 import me.antidotaleks.iter.Iter;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -23,7 +20,15 @@ public class FakePlayer {
         this.playerBase = player;
         this.allPlayersInGame = player.getGame().getAllPlayers();
 
+        generateFakePlayer();
         spawnFakePlayer(allPlayersInGame);
+    }
+
+    // Fake player info
+    private WrappedGameProfile profile;
+
+    private void generateFakePlayer() {
+        profile = new WrappedGameProfile(UUID.randomUUID(), playerBase.getPlayer().getName());
     }
 
     private void spawnFakePlayer(List<Player> playersToSpawnTo) {
@@ -35,7 +40,6 @@ public class FakePlayer {
 
         ProtocolManager pm = Iter.protocolManager;
 
-        PacketContainer playerInfoPacket = pm.createPacket(PacketType.Play.Server.PLAYER_INFO);
         PacketContainer spawnPacket = pm.createPacket(PacketType.Play.Server.SPAWN_ENTITY);
 
         // Generate info
@@ -44,15 +48,6 @@ public class FakePlayer {
         int entityType = 147; // 147 is for player
         UUID uuid = UUID.randomUUID();
         Location spawnLocation = playerBase.getWorldPosition();
-        WrappedGameProfile profile = new WrappedGameProfile(uuid, playerBase.getPlayer().getName());
-        PlayerInfoData playerInfoData = new PlayerInfoData(
-                profile, 0, EnumWrappers.NativeGameMode.CREATIVE, null
-        );
-
-        // Player Info Packet
-
-        playerInfoPacket.getPlayerInfoAction().write(0, EnumWrappers.PlayerInfoAction.ADD_PLAYER);
-        playerInfoPacket.getPlayerInfoDataLists().write(0, Collections.singletonList(playerInfoData));
 
         // Spawn Packet
 
@@ -77,7 +72,11 @@ public class FakePlayer {
 
         // Send Packets
 
-        pm.broadcastServerPacket(playerInfoPacket, playersToSpawnTo);
+        Iter.logger.info("Spawning fake player " + playerBase.getPlayer().getName() +
+                " at [" + spawnLocation.getBlockX() +
+                ", " + spawnLocation.getBlockY() +
+                ", " + spawnLocation.getBlockZ() + "]");
+
         pm.broadcastServerPacket(spawnPacket, playersToSpawnTo);
     }
 }
