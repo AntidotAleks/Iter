@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.awt.*;
@@ -57,6 +58,11 @@ public class Game implements Listener {
                 player.setAllowFlight(true);
                 player.setFlying(false);
                 player.teleport(mapLocation);
+                player.addPotionEffect(
+                        new org.bukkit.potion.PotionEffect(
+                                PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 1, false, false
+                        )
+                );
             }
 
             teams[teamIndex] = Arrays.stream(teamsBukkit[teamIndex])

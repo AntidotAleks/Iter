@@ -51,7 +51,7 @@ public class InfoDisplay {
         infoDisplay.setShadowed(true);
         infoDisplay.setBrightness(new Display.Brightness(15, 15));
         infoDisplay.setBillboard(Display.Billboard.CENTER);
-        // transparent
+        infoDisplay.setTextOpacity((byte) 128);
         infoDisplay.setBackgroundColor(Color.fromARGB(0,0,0,0));
 
         // hide info for themselves

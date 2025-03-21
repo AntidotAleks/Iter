@@ -85,5 +85,7 @@ public class SetupManager {
             hideNameTeam = sb.registerNewTeam("hide_name");
 
         hideNameTeam.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
+        hideNameTeam.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
+        hideNameTeam.setCanSeeFriendlyInvisibles(true);
     }
 }
