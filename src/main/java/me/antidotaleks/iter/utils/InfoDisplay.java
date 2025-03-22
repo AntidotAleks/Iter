@@ -1,7 +1,7 @@
 package me.antidotaleks.iter.utils;
 
-import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
+import me.antidotaleks.iter.elements.FakePlayer;
 import me.antidotaleks.iter.elements.GamePlayer;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Color;
@@ -20,20 +20,24 @@ import org.joml.Vector3f;
 public class InfoDisplay {
 
     private final GamePlayer gamePlayer;
+    private final FakePlayer fakePlayer;
     private final Player player;
-    private final Game.TeamDetails teamDetails;
+    private final TeamDetails teamDetails;
 
     private final TextDisplay infoDisplay;
+    private final TextDisplay fakePlayerInfoDisplay;
     private final ItemDisplay cursor;
     private BukkitRunnable cursorUpdater;
 
     public InfoDisplay(GamePlayer player) {
         this.gamePlayer = player;
+        this.fakePlayer = player.getFakePlayer();
         this.player = player.getPlayer();
         teamDetails = gamePlayer.getTeamDetails();
 
         // Create displays
         infoDisplay = newNicknameInfo(true);
+        fakePlayerInfoDisplay = newNicknameInfo(false);
 
         cursor = newCursor();
         newCursorUpdater();
@@ -43,19 +47,22 @@ public class InfoDisplay {
 
     }
 
-    private TextDisplay newNicknameInfo(boolean hideFromPlayer) {
-        TextDisplay infoDisplay = this.player.getWorld().spawn(gamePlayer.getGame().getMapLocation(), TextDisplay.class);
+    private TextDisplay newNicknameInfo(boolean forRealPlayer) {
+        TextDisplay infoDisplay = Iter.overworld.spawn(gamePlayer.getGame().getMapLocation(), TextDisplay.class);
 
         infoDisplay.setAlignment(TextDisplay.TextAlignment.CENTER);
         infoDisplay.setSeeThrough(true);
         infoDisplay.setShadowed(true);
         infoDisplay.setBrightness(new Display.Brightness(15, 15));
         infoDisplay.setBillboard(Display.Billboard.CENTER);
-        infoDisplay.setTextOpacity((byte) 128);
         infoDisplay.setBackgroundColor(Color.fromARGB(0,0,0,0));
+        infoDisplay.setTeleportDuration(0);
+
+        if (forRealPlayer)
+            infoDisplay.setTextOpacity((byte) 128);
 
         // hide info for themselves
-        if (hideFromPlayer)
+        if (forRealPlayer)
             this.player.hideEntity(Iter.plugin, infoDisplay);
 
         return infoDisplay;
@@ -120,6 +127,7 @@ public class InfoDisplay {
                         ChatColor.of(teamDetails.color), teamName, ChatColor.of(teamDetails.lightColor), this.player.getName(), health, maxHealth, energy, maxEnergy);
 
         infoDisplay.setText(infoString);
+        fakePlayerInfoDisplay.setText(infoString);
     }
 
     public void showCursor() {
@@ -138,7 +146,10 @@ public class InfoDisplay {
     // Utils
 
     public void remove() {
+        dismount();
         infoDisplay.remove();
+        fakePlayerInfoDisplay.remove();
+
         try {
             cursorUpdater.cancel();
         } catch (Exception ignored) {}
@@ -146,11 +157,18 @@ public class InfoDisplay {
     }
 
     public void mount() {
-        this.player.addPassenger(infoDisplay);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                player.addPassenger(infoDisplay);
+                fakePlayer.addPassenger(fakePlayerInfoDisplay);
+            }
+        }.runTaskLater(Iter.plugin, 10);
     }
 
     public void dismount() {
         this.player.removePassenger(infoDisplay);
+        this.fakePlayer.removePassengers();
     }
 
     // Getters

@@ -6,6 +6,7 @@ import me.antidotaleks.iter.elements.items.ItemBasePunch;
 import me.antidotaleks.iter.elements.items.ItemWalk;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.utils.InfoDisplay;
+import me.antidotaleks.iter.utils.TeamDetails;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -14,7 +15,6 @@ import org.bukkit.Location;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Pig;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -37,9 +37,10 @@ public final class GamePlayer implements Listener {
 
     private final Player player;
     private final Game game;
-    private final InfoDisplay infoDisplay;
     private final Point pos = new Point(0, 0);
-    private final Game.TeamDetails teamDetails;
+    private final TeamDetails teamDetails;
+    private final FakePlayer fakePlayer;
+    private final InfoDisplay infoDisplay;
 
     // Items
 
@@ -47,7 +48,7 @@ public final class GamePlayer implements Listener {
     private int slotSelected = 0;
     private final ArrayList<Map.Entry<GameItem, Point>> itemsUsed = new ArrayList<>();
     // Necessary items
-    protected final ItemWalk itemWalk;
+    final ItemWalk itemWalk;
 
     // Stats
 
@@ -65,6 +66,7 @@ public final class GamePlayer implements Listener {
         this.game = game;
         modifiers(modifiers, disbalanceModifier);
         teamDetails = game.getTeamDetails(player);
+        fakePlayer = new FakePlayer(this);
         infoDisplay = new InfoDisplay(this);
 
         player.setPlayerListName(ChatColor.of(teamDetails.color) +"["+teamDetails+"] "+ ChatColor.of(teamDetails.lightColor) + player.getName());
@@ -172,27 +174,12 @@ public final class GamePlayer implements Listener {
         ));
     }
 
-    private boolean isFlying = false;
-    private Pig fakePlayer;
     @EventHandler
     public void flightChange(PlayerToggleFlightEvent event) {
         if (!event.getPlayer().equals(player))
             return;
 
-        if (event.isFlying()) {
-            isFlying = true;
-            fillTileAround(false);
-
-            fakePlayer = Iter.overworld.spawn(getWorldPosition(), Pig.class);
-            fakePlayer.setAI(false);
-        } else {
-            isFlying = false;
-            fillTileAround(true);
-            teleport(getWorldPosition());
-
-            if(fakePlayer != null)
-                fakePlayer.remove();
-        }
+        // Nothing
     }
 
     // Turns
@@ -219,8 +206,7 @@ public final class GamePlayer implements Listener {
 
     public void stop() {
         infoDisplay.remove();
-        if(fakePlayer != null)
-            fakePlayer.remove();
+        fakePlayer.remove();
     }
 
     public boolean useNextItem() {
@@ -289,14 +275,7 @@ public final class GamePlayer implements Listener {
 
     public void setPosition(Point pos) {
         this.pos.setLocation(pos);
-
-        if(fakePlayer != null) {
-            Location newPos = game.toWorldLocation(pos);
-            // Rotate to face the walking direction
-            newPos.setDirection(newPos.clone().subtract(fakePlayer.getLocation()).toVector());
-            fakePlayer.teleport(newPos);
-        } else
-            teleport(getWorldPosition());
+        fakePlayer.teleport(getWorldPosition());
     }
 
     public Location getWorldPosition() {
@@ -417,11 +396,11 @@ public final class GamePlayer implements Listener {
         return game.getTeamIndex(player);
     }
 
-    public Game.TeamDetails getTeamDetails() {
+    public TeamDetails getTeamDetails() {
         return teamDetails;
     }
 
-    public boolean isFlying() {
-        return isFlying;
+    public FakePlayer getFakePlayer() {
+        return fakePlayer;
     }
 }
