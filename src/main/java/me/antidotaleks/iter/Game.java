@@ -5,9 +5,9 @@ import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.maps.Map;
 import me.antidotaleks.iter.utils.TeamDetails;
 import me.antidotaleks.iter.utils.TeamDisplay;
-import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -35,26 +35,34 @@ public class Game implements Listener {
     // Other
     TeamDisplay teamDisplay;
 
-    public Game(Player[][] players, Map map) {
+    public Game(Player[][] playersInTeams, Map map) {
         this.map = map;
         this.mapLocation = map.buildMap();
         this.teamPlayOrder = map.teamPlayOrder();
-        this.teamDetails = TeamDetails.getColors(players.length);
+        this.teamDetails = TeamDetails.getColors(playersInTeams.length);
 
-        // shuffle by teamPlayOrder
-        this.teamsBukkit = new Player[players.length][];
-        for (int i = 0; i < players.length; i++) {
-            this.teamsBukkit[i] = players[teamPlayOrder[i]];
-        }
+        // shuffle teams by teamPlayOrder
 
-        // Create GamePlayers and register events
-        this.teams = new GamePlayer[players.length][];
+        List<Player[]> teamList = Arrays.asList(playersInTeams);
+        Collections.shuffle(teamList);
+        teamsBukkit = teamList.toArray(new Player[0][0]);
+
+        // Create GamePlayers and register events for them
+
+        this.teams = new GamePlayer[teamsBukkit.length][];
         for (int teamIndex = 0; teamIndex < teamsBukkit.length; teamIndex++) {
 
-            Player[] team = teamsBukkit[teamIndex];
-            int tempI = teamIndex;
+            // Get the team and their info
 
-            for (Player player : team) {
+            GamePlayer[] team = teams[teamIndex] = new GamePlayer[teamsBukkit[teamIndex].length];
+
+            final Player[] teamBukkit = teamsBukkit[teamIndex];
+            final ArrayList<Point> teamSpawnPoints = map.getSpawnPoints(teamIndex);
+            final ConfigurationSection teamModifiers = map.getModifiers(teamIndex);
+
+            // Set vanilla player settings
+
+            for (Player player : teamBukkit) {
                 player.setGameMode(GameMode.ADVENTURE);
                 player.setAllowFlight(true);
                 player.setFlying(false);
@@ -66,18 +74,10 @@ public class Game implements Listener {
                 );
             }
 
-            teams[teamIndex] = Arrays.stream(teamsBukkit[teamIndex])
-                    .map(player -> new GamePlayer(player, this, map.getModifiers(tempI), 0))
-                    .toArray(GamePlayer[]::new);
+            // Create GamePlayers
 
-
-            for (int gamePlayerIndex = 0; gamePlayerIndex < teams[teamIndex].length; gamePlayerIndex++) {
-                GamePlayer gamePlayer = teams[teamIndex][gamePlayerIndex];
-                Bukkit.getPluginManager().registerEvents(gamePlayer, Iter.plugin);
-
-                Point spawnPoint = map.getSpawnPoints(teamIndex).get(gamePlayerIndex);
-                gamePlayer.setPosition(spawnPoint);
-            }
+            for (int playerIndex = 0; playerIndex < teamBukkit.length; playerIndex++)
+                team[playerIndex] = new GamePlayer(teamBukkit[playerIndex], this, (Point) teamSpawnPoints.get(playerIndex).clone(), teamModifiers, 0.0);
         }
 
     }

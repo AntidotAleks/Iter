@@ -15,6 +15,7 @@ import java.awt.*;
 import java.io.File;
 import java.util.List;
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class Map {
     private final String[] mapData;
@@ -289,16 +290,14 @@ public class Map {
     public int[] teamPlayOrder() {
         // If order is specified, return order
         if (teamPlayOrder != null) {
-            Iter.logger.info("Using specified team play order for map "+mapName+": "+ Arrays.toString(teamPlayOrder));
+            Iter.logger.config("Using specified team play order for map "+mapName+": "+ Arrays.toString(teamPlayOrder));
             return teamPlayOrder;
         }
         // Otherwise return random order
-        ArrayList<Integer> order = new ArrayList<>();
-        for (int i = 0; i < playersInTeams.length; i++) {
-            order.add(i);
-        }
+
+        List<Integer> order = IntStream.range(0, playersInTeams.length).collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
         Collections.shuffle(order);
-        Iter.logger.info("Using random team play order for map "+mapName+": "+order);
+        Iter.logger.config("Using random team play order for map "+mapName+": "+order);
         return order.stream().mapToInt(i -> i).toArray();
     }
 

@@ -37,10 +37,10 @@ public final class GamePlayer implements Listener {
 
     private final Player player;
     private final Game game;
-    private final Point pos = new Point(0, 0);
     private final TeamDetails teamDetails;
     private final FakePlayer fakePlayer;
     private final InfoDisplay infoDisplay;
+    private final Point pos = new Point();
 
     // Items
 
@@ -61,7 +61,10 @@ public final class GamePlayer implements Listener {
     private boolean isDead = false;
 
 
-    public GamePlayer(Player player, Game game, ConfigurationSection modifiers, double disbalanceModifier) {
+    public GamePlayer(Player player, Game game, Point spawnPosition, ConfigurationSection modifiers, double disbalanceModifier) {
+
+        // Player data
+
         this.player = player;
         this.game = game;
         modifiers(modifiers, disbalanceModifier);
@@ -69,9 +72,14 @@ public final class GamePlayer implements Listener {
         fakePlayer = new FakePlayer(this);
         infoDisplay = new InfoDisplay(this);
 
+        // Setup
+
         player.setPlayerListName(ChatColor.of(teamDetails.color) +"["+teamDetails+"] "+ ChatColor.of(teamDetails.lightColor) + player.getName());
+        Bukkit.getPluginManager().registerEvents(this, Iter.plugin);
+        setPosition(spawnPosition);
 
         // Items
+
         itemWalk = new ItemWalk(this);
 
         items.add(itemWalk);

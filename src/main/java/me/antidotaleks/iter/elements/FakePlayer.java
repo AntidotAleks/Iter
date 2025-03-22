@@ -98,16 +98,16 @@ public class FakePlayer {
 
         pm.broadcastServerPacket(infoPacket, playersToSpawnTo);
         pm.broadcastServerPacket(spawnPacket, playersToSpawnTo);
+
+        teleport(playerBase.getWorldPosition());
     }
 
     public void teleport(Location newLocation) {
         try {
-            removePassengers();
             moveEntity(entityId, newLocation, allPlayersInGame);
-            newLocation = newLocation.clone().add(0, 2.8, 0);
-            for (Integer passengerId : passengerIds) {
-                moveEntity(passengerId, newLocation, allPlayersInGame);
-                addPassenger(passengerId, allPlayersInGame);
+            newLocation = newLocation.clone().add(0, 1.8, 0);
+            for (Entity passenger : passengers) {
+                moveEntity(passenger.getEntityId(), newLocation, allPlayersInGame);
             }
         } catch (Exception e) {
             Iter.logger.warning("Error teleporting fake player:");
@@ -188,18 +188,20 @@ public class FakePlayer {
         entityId = -1;
     }
 
-    private ArrayList<Integer> passengerIds = new ArrayList<>();
+    // Passengers
+
+    private ArrayList<Entity> passengers = new ArrayList<>();
 
     public void addPassenger(Entity entity) {
         try {
-            addPassenger(entity.getEntityId(), allPlayersInGame);
+            addPassenger(entity, allPlayersInGame);
         } catch (Exception e) {
             Iter.logger.warning("Error adding passenger to fake player:");
             e.printStackTrace();
         }
     }
 
-    private void addPassenger(int passengerId, List<Player> playersToAddPassengerTo) {
+    private void addPassenger(Entity passenger, List<Player> playersToAddPassengerTo) {
 
         if(entityId == -1) {
             Iter.logger.warning("Attempted to add passenger to non-existent fake player");
@@ -210,7 +212,7 @@ public class FakePlayer {
 
         playersToAddPassengerTo = playersToAddPassengerTo.stream().filter(Objects::nonNull).toList();
         if(playersToAddPassengerTo.isEmpty()) return;
-        passengerIds.add(passengerId);
+        passengers.add(passenger);
 
         // Create packets
 
@@ -222,7 +224,7 @@ public class FakePlayer {
         mountPacket.getIntegers()
                 .write(0, entityId); // Vehicle ID
         mountPacket.getIntegerArrays()
-                .write(0, passengerIds.stream().mapToInt(i -> i).toArray()); // Passenger ID
+                .write(0, passengers.stream().mapToInt(Entity::getEntityId).toArray()); // Passenger ID
 
         // Send Packets
 
@@ -256,11 +258,12 @@ public class FakePlayer {
         mountPacket.getIntegers()
                 .write(0, entityId); // Vehicle ID
         mountPacket.getIntegerArrays()
-                .write(0, passengerIds.stream().mapToInt(i -> i).toArray()); // Passenger IDs
+                .write(0, passengers.stream().mapToInt(Entity::getEntityId).toArray()); // Passenger IDs
 
         // Send Packets
 
         pm.broadcastServerPacket(mountPacket, playersToRemovePassengerFrom);
-        passengerIds.clear();
+        passengers.clear();
     }
+
 }
