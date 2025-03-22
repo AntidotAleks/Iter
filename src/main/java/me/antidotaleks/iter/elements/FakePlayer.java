@@ -21,6 +21,8 @@ public class FakePlayer {
     private int entityId = -1;
     private UUID uuid;
 
+    // Common
+
     public FakePlayer(GamePlayer player) {
         this.playerBase = player;
         this.allPlayersInGame = player.getGame().getAllPlayers();
@@ -60,8 +62,8 @@ public class FakePlayer {
 
         WrappedGameProfile profile = new WrappedGameProfile(uuid, playerBase.getPlayer().getName());
         Multimap<String, WrappedSignedProperty> properties = WrappedGameProfile.fromPlayer(playerBase.getPlayer()).getProperties();
-        System.out.println("Properties for "+playerBase.getPlayer().getName()+":");
-        properties.forEach((x, y)-> System.out.println(x+": "+y.toString()));
+        // System.out.println("Properties for "+playerBase.getPlayer().getName()+":");
+        // properties.forEach((x, y)-> System.out.println(x+": "+y.toString())); TODO: test in online, then remove
         profile.getProperties().putAll(properties);
         WrappedChatComponent displayName = WrappedChatComponent.fromText(playerBase.getPlayer().getName());
         PlayerInfoData playerInfoData = new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.CREATIVE, displayName);

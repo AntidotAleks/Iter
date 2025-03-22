@@ -2,6 +2,7 @@ package me.antidotaleks.iter;
 
 import me.antidotaleks.iter.commands.QueueCommand;
 import me.antidotaleks.iter.commands.TeamCommand;
+import me.antidotaleks.iter.commands.TestCommand;
 import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabExecutor;
@@ -33,6 +34,7 @@ public class SetupManager {
     private static final HashMap<String, TabExecutor> commands = new HashMap<>(){{
         put("iqueue", new QueueCommand());
         put("iteam", new TeamCommand());
+        put("itest", new TestCommand());
     }};
 
     public static void registerCommands() {

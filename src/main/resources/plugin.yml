@@ -13,3 +13,7 @@ commands:
     description: Join a team.
     usage: /iteam <invite|kick|join|accept|decline|leave|list> [player]
     permission: iter.iteam
+  itest:
+    description: Test command.
+    usage: /itest
+    permission: iter.itest

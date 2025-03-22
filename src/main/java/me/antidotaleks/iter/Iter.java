@@ -36,7 +36,6 @@ public final class Iter extends JavaPlugin {
         Teaming.onEnable(); // Remove invites older than 30 seconds and return players to the team lists
         SetupManager.setupMinecraftTeams();
 
-
     }
 
     @Override
