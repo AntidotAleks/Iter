@@ -168,7 +168,7 @@ public class InfoDisplay {
 
     public void dismount() {
         this.player.removePassenger(infoDisplay);
-        this.fakePlayer.removePassengers();
+        this.fakePlayer.removePassenger(fakePlayerInfoDisplay);
     }
 
     // Getters

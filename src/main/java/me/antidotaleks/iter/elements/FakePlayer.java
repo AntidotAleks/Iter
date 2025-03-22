@@ -106,8 +106,10 @@ public class FakePlayer {
         try {
             moveEntity(entityId, newLocation, allPlayersInGame);
             newLocation = newLocation.clone().add(0, 1.8, 0);
-            for (Entity passenger : passengers) {
-                moveEntity(passenger.getEntityId(), newLocation, allPlayersInGame);
+            for (int passengerId : passengerIds) {
+                removePassenger(passengerId, allPlayersInGame);
+                moveEntity(passengerId, newLocation, allPlayersInGame);
+                addPassenger(passengerId, allPlayersInGame);
             }
         } catch (Exception e) {
             Iter.logger.warning("Error teleporting fake player:");
@@ -190,18 +192,18 @@ public class FakePlayer {
 
     // Passengers
 
-    private ArrayList<Entity> passengers = new ArrayList<>();
+    private final ArrayList<Integer> passengerIds = new ArrayList<>();
 
     public void addPassenger(Entity entity) {
         try {
-            addPassenger(entity, allPlayersInGame);
+            addPassenger(entity.getEntityId(), allPlayersInGame);
         } catch (Exception e) {
             Iter.logger.warning("Error adding passenger to fake player:");
             e.printStackTrace();
         }
     }
 
-    private void addPassenger(Entity passenger, List<Player> playersToAddPassengerTo) {
+    private void addPassenger(int passengerId, List<Player> playersToAddPassengerTo) {
 
         if(entityId == -1) {
             Iter.logger.warning("Attempted to add passenger to non-existent fake player");
@@ -212,41 +214,35 @@ public class FakePlayer {
 
         playersToAddPassengerTo = playersToAddPassengerTo.stream().filter(Objects::nonNull).toList();
         if(playersToAddPassengerTo.isEmpty()) return;
-        passengers.add(passenger);
+        passengerIds.add(passengerId);
 
         // Create packets
 
-        ProtocolManager pm = Iter.protocolManager;
-        PacketContainer mountPacket = pm.createPacket(PacketType.Play.Server.MOUNT);
-
-        // Mount Packet
-
-        mountPacket.getIntegers()
-                .write(0, entityId); // Vehicle ID
-        mountPacket.getIntegerArrays()
-                .write(0, passengers.stream().mapToInt(Entity::getEntityId).toArray()); // Passenger ID
-
-        // Send Packets
-
-        pm.broadcastServerPacket(mountPacket, playersToAddPassengerTo);
+        updatePassengers(playersToAddPassengerTo);
 
     }
 
-    public void removePassengers() {
+    public void removePassenger(Entity passenger) {
         try {
-            removePassengers(allPlayersInGame);
+            removePassenger(passenger.getEntityId(), allPlayersInGame);
         } catch (Exception e) {
             Iter.logger.warning("Error removing passenger from fake player:");
             e.printStackTrace();
         }
     }
 
-    private void removePassengers(List<Player> playersToRemovePassengerFrom) {
+    private void removePassenger(int passengerId, List<Player> playersToRemovePassengerFrom) {
 
         // Filter list of players
 
         playersToRemovePassengerFrom = playersToRemovePassengerFrom.stream().filter(Objects::nonNull).toList();
         if(playersToRemovePassengerFrom.isEmpty()) return;
+        passengerIds.remove((Integer) passengerId);
+
+        updatePassengers(playersToRemovePassengerFrom);
+    }
+
+    private void updatePassengers(List<Player> playersToUpdatePassengersFor) {
 
         // Create packets
 
@@ -258,12 +254,11 @@ public class FakePlayer {
         mountPacket.getIntegers()
                 .write(0, entityId); // Vehicle ID
         mountPacket.getIntegerArrays()
-                .write(0, passengers.stream().mapToInt(Entity::getEntityId).toArray()); // Passenger IDs
+                .write(0, passengerIds.stream().mapToInt(i->i).toArray()); // Passenger IDs
 
         // Send Packets
 
-        pm.broadcastServerPacket(mountPacket, playersToRemovePassengerFrom);
-        passengers.clear();
+        pm.broadcastServerPacket(mountPacket, playersToUpdatePassengersFor);
     }
 
 }
