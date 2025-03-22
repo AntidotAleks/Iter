@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +35,9 @@ public final class GameManager implements Listener {
 
         Game thisGame = new Game(players, map); // Create new game instance
         Bukkit.getPluginManager().registerEvents(thisGame, Iter.plugin);
-        thisGame.start();
+        new BukkitRunnable() { @Override public void run() {
+            thisGame.start();
+        }}.runTaskLater(Iter.plugin, 20);
 
         games.add(thisGame);
     }

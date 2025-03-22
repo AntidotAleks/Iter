@@ -36,6 +36,7 @@ public class Game implements Listener {
     TeamDisplay teamDisplay;
 
     public Game(Player[][] playersInTeams, Map map) {
+        Iter.logger.info("Creating game with map " + map.getDisplayName());
         this.map = map;
         this.mapLocation = map.buildMap();
         this.teamPlayOrder = map.teamPlayOrder();
@@ -65,8 +66,7 @@ public class Game implements Listener {
             for (Player player : teamBukkit) {
                 player.setGameMode(GameMode.ADVENTURE);
                 player.setAllowFlight(true);
-                player.setFlying(false);
-                player.teleport(mapLocation);
+                player.setFlying(true);
                 player.addPotionEffect(
                         new org.bukkit.potion.PotionEffect(
                                 PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false
@@ -78,6 +78,9 @@ public class Game implements Listener {
 
             for (int playerIndex = 0; playerIndex < teamBukkit.length; playerIndex++)
                 team[playerIndex] = new GamePlayer(teamBukkit[playerIndex], this, (Point) teamSpawnPoints.get(playerIndex).clone(), teamModifiers, 0.0);
+
+            for (GamePlayer player : team)
+                player.teleport(player.getWorldPosition().add(0,3.5,0));
         }
 
     }
@@ -89,21 +92,18 @@ public class Game implements Listener {
 
 
     public void start() {
+        Iter.logger.info("Starting game");
+
         for (int teamIndex = 0; teamIndex < map.getTeamsAmount(); teamIndex++) {
             // Get the team and their spawn points
             GamePlayer[] team = teams[teamIndex];
-            ArrayList<Point> tsp = map.getSpawnPoints(teamIndex);
-            // Shuffle the spawn points
-            Collections.shuffle(tsp);
+
             // Teleport players to their spawn points
             for (int playerIndex = 0; playerIndex < team.length; playerIndex++) {
-                Point point = tsp.get(playerIndex); // Get team's spawn point at index playerIndex
-                Location spawn = toWorldLocation(point); // Transform the point to a location
                 GamePlayer gamePlayer = teams[teamIndex][playerIndex];
 
-                gamePlayer.getPlayer().teleport(spawn);
                 gamePlayer.getInfoDisplay().mount();
-
+                gamePlayer.setPosition(gamePlayer.getPosition());
             }
         }
 

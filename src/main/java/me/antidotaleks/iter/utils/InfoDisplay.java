@@ -43,11 +43,9 @@ public class InfoDisplay {
         newCursorUpdater();
 
         updateData();
-
-
     }
 
-    private TextDisplay newNicknameInfo(boolean forRealPlayer) {
+    private TextDisplay newNicknameInfo(boolean isForRealPlayer) {
         TextDisplay infoDisplay = Iter.overworld.spawn(gamePlayer.getGame().getMapLocation(), TextDisplay.class);
 
         infoDisplay.setAlignment(TextDisplay.TextAlignment.CENTER);
@@ -56,13 +54,13 @@ public class InfoDisplay {
         infoDisplay.setBrightness(new Display.Brightness(15, 15));
         infoDisplay.setBillboard(Display.Billboard.CENTER);
         infoDisplay.setBackgroundColor(Color.fromARGB(0,0,0,0));
-        infoDisplay.setTeleportDuration(0);
+        infoDisplay.setTeleportDuration(3);
 
-        if (forRealPlayer)
-            infoDisplay.setTextOpacity((byte) 128);
+        if (isForRealPlayer)
+            infoDisplay.setTextOpacity((byte) 100);
 
         // hide info for themselves
-        if (forRealPlayer)
+        if (isForRealPlayer)
             this.player.hideEntity(Iter.plugin, infoDisplay);
 
         return infoDisplay;
@@ -157,13 +155,8 @@ public class InfoDisplay {
     }
 
     public void mount() {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                player.addPassenger(infoDisplay);
-                fakePlayer.addPassenger(fakePlayerInfoDisplay);
-            }
-        }.runTaskLater(Iter.plugin, 10);
+        player.addPassenger(infoDisplay);
+        fakePlayer.addPassenger(fakePlayerInfoDisplay);
     }
 
     public void dismount() {

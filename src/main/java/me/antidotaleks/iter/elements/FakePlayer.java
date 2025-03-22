@@ -3,10 +3,8 @@ package me.antidotaleks.iter.elements;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.EnumWrappers;
-import com.comphenix.protocol.wrappers.PlayerInfoData;
-import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import com.comphenix.protocol.wrappers.WrappedGameProfile;
+import com.comphenix.protocol.wrappers.*;
+import com.google.common.collect.Multimap;
 import me.antidotaleks.iter.Iter;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -61,6 +59,10 @@ public class FakePlayer {
         location = playerBase.getWorldPosition();
 
         WrappedGameProfile profile = new WrappedGameProfile(uuid, playerBase.getPlayer().getName());
+        Multimap<String, WrappedSignedProperty> properties = WrappedGameProfile.fromPlayer(playerBase.getPlayer()).getProperties();
+        System.out.println("Properties for "+playerBase.getPlayer().getName()+":");
+        properties.forEach((x, y)-> System.out.println(x+": "+y.toString()));
+        profile.getProperties().putAll(properties);
         WrappedChatComponent displayName = WrappedChatComponent.fromText(playerBase.getPlayer().getName());
         PlayerInfoData playerInfoData = new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.CREATIVE, displayName);
 
@@ -119,7 +121,6 @@ public class FakePlayer {
     }
 
     private void moveEntity(int entityId, Location newLocation, List<Player> playersToShowTeleport) {
-        Iter.logger.info("Teleporting fake player of " + playerBase.getPlayer().getName() + " (id: " + entityId + ") to " + newLocation);
 
         // Create packets
 
