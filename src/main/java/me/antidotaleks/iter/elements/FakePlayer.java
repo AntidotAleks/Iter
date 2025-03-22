@@ -108,6 +108,7 @@ public class FakePlayer {
             newLocation = newLocation.clone().add(0, 1.8, 0);
             for (int passengerId : passengerIds) {
                 removePassenger(passengerId, allPlayersInGame);
+                Iter.protocolManager.getEntityFromID(Iter.overworld, passengerId).teleport(newLocation);
                 moveEntity(passengerId, newLocation, allPlayersInGame);
                 addPassenger(passengerId, allPlayersInGame);
             }
