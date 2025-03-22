@@ -18,10 +18,10 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
-import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.RayTraceResult;
 
@@ -105,89 +105,50 @@ public final class GamePlayer implements Listener {
 
     // Events
 
+    /* RMB - use item, LMB - undo last item */
     @EventHandler
     public void playerInteract(PlayerInteractEvent event) {
         if (!event.getPlayer().equals(player) || !canPlay || event.getHand() != EquipmentSlot.HAND)
             return;
-
-        Iter.logger.info(String.valueOf(event.getAction()));
-        interact();
-    }
-
-    private void interact() {
-        Point tilePos = getLookTilePosition();
-        if (tilePos == null)
-            return;
-
-        GameItem item = items.get(slotSelected);
-
-        if (!item.usable(tilePos))
-            return;
-        if(!useEnergy(item.getEnergyUsage()))
-            return;
-
-        itemsUsed.add(Map.entry(item, tilePos));
-        this.updateInfo();
-
-        if (item instanceof PreUsed)
-            ((PreUsed) item).preUse(tilePos);
-
-
-        Iter.logger.info("Interact at tile pos: [" + tilePos.x + ", " + tilePos.y+"]");
-    }
-
-    @EventHandler
-    public void undo(PlayerDropItemEvent event) {
-        if (!event.getPlayer().equals(player))
-            return;
-
         event.setCancelled(true);
 
-        if (!canPlay)
-            return;
+        Iter.logger.info("Player interact event "+event.getAction().name());
 
-        if(itemsUsed.isEmpty())
-            return;
-
-        // If shift+q, undo all
-        if (!player.isSneaking()) {
+        if (event.getAction() == Action.LEFT_CLICK_AIR)
+            interact();
+        else
             undoLast();
-            this.updateInfo();
-            return;
-        }
 
-        while (!itemsUsed.isEmpty())
-            undoLast();
-        this.updateInfo();
+        updateInfo();
     }
 
+    /* Q - finish turn */
     @EventHandler
-    public void nextItemAndTurn(PlayerSwapHandItemsEvent event) {
+    public void finishTurnFromEvent(PlayerDropItemEvent event) {
         if (!event.getPlayer().equals(player))
             return;
         event.setCancelled(true);
+        if(!canPlay)
+            return;
 
-        if(player.isSneaking()) {
-            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(
                 "Finished turn"
-            ));
-            finishTurn();
+        ));
+        finishTurn();
+    }
+
+    /* F - next item */
+    @EventHandler
+    public void nextItemFromEvent(PlayerSwapHandItemsEvent event) {
+        if (!event.getPlayer().equals(player))
             return;
-        }
+        event.setCancelled(true);
 
         slotSelected = (slotSelected + 1) % items.size();
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(
             "Selected item: " + List.of(items.get(slotSelected).getClass().getName().split("\\.")).getLast() +
             " (" + (slotSelected+1) + "/" + items.size() + ")"
         ));
-    }
-
-    @EventHandler
-    public void flightChange(PlayerToggleFlightEvent event) {
-        if (!event.getPlayer().equals(player))
-            return;
-
-        // Nothing
     }
 
     // Turns
@@ -229,10 +190,35 @@ public final class GamePlayer implements Listener {
         return true;
     }
 
+    private void interact() {
+        Point tilePos = getLookTilePosition();
+        if (tilePos == null)
+            return;
+
+        GameItem item = items.get(slotSelected);
+
+        if (!item.usable(tilePos))
+            return;
+        if(!useEnergy(item.getEnergyUsage()))
+            return;
+
+        itemsUsed.add(Map.entry(item, tilePos));
+
+        if (item instanceof PreUsed)
+            ((PreUsed) item).preUse(tilePos);
+
+
+        Iter.logger.info("Interact at tile: [" + tilePos.x + ", " + tilePos.y+"]");
+    }
+
     private void undoLast() {
-        this.restoreEnergy(itemsUsed.getLast().getKey().getEnergyUsage());
+        if(itemsUsed.isEmpty())
+            return;
 
         GameItem lastItem = itemsUsed.getLast().getKey();
+
+        this.restoreEnergy(lastItem.getEnergyUsage());
+
         if (lastItem instanceof PreUsed)
             ((PreUsed) lastItem).undoPreUse();
 
