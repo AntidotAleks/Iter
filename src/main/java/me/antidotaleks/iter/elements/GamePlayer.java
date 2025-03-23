@@ -378,6 +378,10 @@ public final class GamePlayer implements Listener {
         return game.getTeam(player);
     }
 
+    public List<GameItem> getItems() {
+        return List.copyOf(items);
+    }
+
     public List<Map.Entry<GameItem, Point>> getItemsUsed() {
         return Collections.unmodifiableList(itemsUsed);
     }
@@ -397,4 +401,5 @@ public final class GamePlayer implements Listener {
     public FakePlayer getFakePlayer() {
         return fakePlayer;
     }
+
 }

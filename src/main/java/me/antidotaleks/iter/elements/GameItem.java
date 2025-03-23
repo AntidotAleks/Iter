@@ -24,16 +24,20 @@ public abstract class GameItem implements GameItemInterface {
         this.map = player.getGame().getMap();
     }
 
-    protected int tilesAway(Point coords1, Point coords2) {
-        return Math.abs(coords1.x-coords2.x) + Math.abs(coords1.y-coords2.y);
-    }
-
     protected Point getCurrentPosition() {
         List<Point> stepPlanning = player.itemWalk.getStepPlanning();
         if (stepPlanning.isEmpty())
             return player.getPosition();
 
         return stepPlanning.getLast();
+    }
+
+    public char getCardSymbol() {
+        return '\u0001';
+    }
+
+    protected static int tilesAway(Point coords1, Point coords2) {
+        return Math.abs(coords1.x-coords2.x) + Math.abs(coords1.y-coords2.y);
     }
 
     public enum TargetSelector {

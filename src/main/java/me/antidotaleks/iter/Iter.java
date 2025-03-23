@@ -2,6 +2,7 @@ package me.antidotaleks.iter;
 
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
+import net.md_5.bungee.api.chat.TranslatableComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -44,6 +45,11 @@ public final class Iter extends JavaPlugin {
             GameManager.stopGame(GameManager.games.getLast());
 
         }
+    }
+
+    public static TranslatableComponent offset(int offset) {
+        if (offset < -8192 || offset > 8192) throw new IllegalArgumentException("Offset out of bounds, must be in [-8192, 8192]");
+        return new TranslatableComponent("space." + offset);
     }
 
 

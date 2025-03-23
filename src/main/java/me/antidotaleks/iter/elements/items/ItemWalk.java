@@ -90,4 +90,14 @@ public class ItemWalk extends GameItem implements PreUsed {
         player.setPosition(nextStep.getFirst());
         nextStep.removeFirst();
     }
+
+    @Override
+    public String getName() {
+        return "Walk";
+    }
+
+    @Override
+    public char getCardSymbol() {
+        return '\u0001';
+    }
 }

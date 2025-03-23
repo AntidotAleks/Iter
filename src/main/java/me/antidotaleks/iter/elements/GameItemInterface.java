@@ -15,4 +15,6 @@ public interface GameItemInterface {
     boolean usable(Point coords);
 
     void use(Point coords);
+
+    String getName();
 }

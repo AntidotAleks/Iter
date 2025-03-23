@@ -38,6 +38,16 @@ public class ItemBasePunch extends GameItem {
         particles(player.getPosition(), coords);
     }
 
+    @Override
+    public String getName() {
+        return "Base Punch";
+    }
+
+    @Override
+    public char getCardSymbol() {
+        return '\u0002';
+    }
+
     private void particles(Point from, Point to) {
         Location fromLoc = player.getGame().toWorldLocation(from).add(0, 1, 0);
         Location toLoc = player.getGame().toWorldLocation(to).add(0, 1, 0);

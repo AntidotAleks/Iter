@@ -33,6 +33,7 @@ public class FakePlayer {
     public void spawnFakePlayer() {
         try {
             spawnFakePlayer(allPlayersInGame);
+            glow(playerBase.getPlayer());
         } catch (Exception e) {
             Iter.logger.warning("Error spawning fake player:");
             e.printStackTrace();
@@ -192,6 +193,38 @@ public class FakePlayer {
         pm.broadcastServerPacket(infoPacket, playersToRemoveFrom);
 
         entityId = -1;
+    }
+
+    private void glow(Player playerToShowGlowTo) {
+
+        if(playerToShowGlowTo == null) return;
+
+        // Create packets
+
+        ProtocolManager pm = Iter.protocolManager;
+        PacketContainer glowPacket = pm.createPacket(PacketType.Play.Server.ENTITY_METADATA);
+        WrappedDataWatcher watcher = new WrappedDataWatcher();
+
+        // Glow Packet
+
+        WrappedDataWatcher.Serializer byteSerializer = WrappedDataWatcher.Registry.get(Byte.class);
+        byte glowingMask = 0x40;
+        watcher.setEntity(playerToShowGlowTo); // Player to show glow to for some unimaginable reason, like, why? we already know the player we are sending the packet to
+        watcher.setObject(0, byteSerializer, glowingMask);
+
+        final List<WrappedDataValue> wrappedDataValueList = watcher.getWatchableObjects().stream().filter(Objects::nonNull).map( entry -> {
+            final WrappedDataWatcher.WrappedDataWatcherObject object = entry.getWatcherObject();
+            return new WrappedDataValue(object.getIndex(), object.getSerializer(), entry.getRawValue());
+        }).toList();
+
+        glowPacket.getIntegers()
+                .write(0, entityId); // Entity ID
+        glowPacket.getDataValueCollectionModifier()
+                .write(0, wrappedDataValueList);
+
+        // Send Packets
+
+        pm.sendServerPacket(playerToShowGlowTo, glowPacket);
     }
 
     // Passengers

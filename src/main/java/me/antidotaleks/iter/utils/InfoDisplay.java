@@ -2,8 +2,12 @@ package me.antidotaleks.iter.utils;
 
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.FakePlayer;
+import me.antidotaleks.iter.elements.GameItem;
 import me.antidotaleks.iter.elements.GamePlayer;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -17,6 +21,10 @@ import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public class InfoDisplay {
 
     private final GamePlayer gamePlayer;
@@ -28,6 +36,8 @@ public class InfoDisplay {
     private final TextDisplay fakePlayerInfoDisplay;
     private final ItemDisplay cursor;
     private BukkitRunnable cursorUpdater;
+
+    // Common
 
     public InfoDisplay(GamePlayer player) {
         this.gamePlayer = player;
@@ -141,6 +151,45 @@ public class InfoDisplay {
         newCursorUpdater();
     }
 
+    // UI
+
+    public void cardList() {
+        BaseComponent[] itemsAsText = gamePlayer.getItems().stream()
+                .flatMap(item -> card(item, false).stream())
+                .toArray(BaseComponent[]::new);
+        System.out.println(Arrays.toString(itemsAsText));
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, itemsAsText);
+            }
+        }.runTaskTimer(Iter.plugin, 0, 10);
+
+    }
+
+    public List<BaseComponent> card(GameItem item, boolean withDescription) {
+        String[] title = titleSplit(item.getName());
+
+        TextComponent cardSymbol = new TextComponent(String.valueOf(item.getCardSymbol()));
+        cardSymbol.setFont("cards");
+        TextComponent title1 = new TextComponent(title[0]);
+        title1.setFont("mono"); title1.setColor(ChatColor.BLACK);
+        TextComponent title2 = new TextComponent(title[1]);
+        title2.setFont("mono_low1"); title2.setColor(ChatColor.BLACK);
+
+        List<BaseComponent> card = new ArrayList<>();
+
+        card.add(cardSymbol);
+        card.add(Iter.offset(-3*title[0].length() - 30));
+        card.add(title1);
+        card.add(Iter.offset(-3*(title[0].length() + title[1].length() + 1)));
+        card.add(title2);
+        card.add(Iter.offset(-3*title[1].length() + 33));
+
+        return card;
+    }
+
     // Utils
 
     public void remove() {
@@ -162,6 +211,34 @@ public class InfoDisplay {
     public void dismount() {
         this.player.removePassenger(infoDisplay);
         this.fakePlayer.removePassenger(fakePlayerInfoDisplay);
+    }
+
+    private String[] titleSplit(String title) {
+        if (title.length() <= 9)
+            return new String[]{title, ""};
+
+        // Get space char closest to the middle, both sides
+        int splitIndex = title.length() / 2;
+        boolean spaceFound = false;
+        for (int i = splitIndex; i < title.length(); i++) {
+            try {
+                if (title.charAt(i) == ' ') {
+                    splitIndex = i;
+                    spaceFound = true;
+                    break;
+                }
+                if (title.charAt(title.length() - i) == ' ') {
+                    splitIndex = title.length() - i;
+                    spaceFound = true;
+                    break;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        return new String[]{
+                title.substring(0, splitIndex) + (spaceFound?"":"-"),
+                title.substring(splitIndex)
+        };
     }
 
     // Getters
