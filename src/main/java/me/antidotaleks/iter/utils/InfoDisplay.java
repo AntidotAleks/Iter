@@ -250,6 +250,10 @@ public class InfoDisplay {
 
     // Getters
 
+    public GamePlayer getGamePlayer() {
+        return gamePlayer;
+    }
+
     public Player getPlayer() {
         return player;
     }
