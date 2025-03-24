@@ -18,6 +18,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.*;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
@@ -246,6 +247,15 @@ public class InfoDisplay {
         List<String> split = titleSplit(title.substring(spaceIndex+(spaceFound?1:0)));
         split.addFirst(title.substring(0, spaceIndex) + (spaceFound?"":"-"));
         return split;
+    }
+
+    public void createScoreboard() {
+        Scoreboard scoreboard = player.getScoreboard();
+        Objective objective = scoreboard.getObjective(DisplaySlot.SIDEBAR);
+        if (objective == null)
+            scoreboard.registerNewObjective(player.getName(), Criteria.DUMMY, "");
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+
     }
 
     // Getters
