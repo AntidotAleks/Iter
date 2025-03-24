@@ -17,6 +17,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scoreboard.*;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
@@ -244,6 +245,15 @@ public class InfoDisplay {
                 title.substring(0, splitIndex) + (spaceFound?"":"-"),
                 title.substring(splitIndex)
         };
+    }
+
+    public void createScoreboard() {
+        Scoreboard scoreboard = player.getScoreboard();
+        Objective objective = scoreboard.getObjective(DisplaySlot.SIDEBAR);
+        if (objective == null)
+            scoreboard.registerNewObjective(player.getName(), Criteria.DUMMY, "");
+        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+
     }
 
     // Getters
