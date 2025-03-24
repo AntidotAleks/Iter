@@ -1,5 +1,6 @@
 package me.antidotaleks.iter.utils;
 
+import com.google.common.collect.Lists;
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.FakePlayer;
 import me.antidotaleks.iter.elements.GameItem;
@@ -22,7 +23,6 @@ import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class InfoDisplay {
@@ -157,7 +157,6 @@ public class InfoDisplay {
         BaseComponent[] itemsAsText = gamePlayer.getItems().stream()
                 .flatMap(item -> actionbarCard(item, false).stream())
                 .toArray(BaseComponent[]::new);
-        System.out.println(Arrays.toString(itemsAsText));
 
         new BukkitRunnable() {
             @Override
@@ -166,33 +165,6 @@ public class InfoDisplay {
             }
         }.runTaskTimer(Iter.plugin, 0, 10);
 
-    }
-
-    private static final String[] CARD_OFFSET_FONT = new String[]{"cards", "cards_low"};
-    private static final String[] TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3"};
-    private List<BaseComponent> actionbarCard(GameItem item, boolean expanded) {
-        String[] title = titleSplit(item.getName());
-        int offset = expanded?0:1;
-
-        TextComponent cardSymbol = new TextComponent(String.valueOf(item.getCardSymbol()));
-        cardSymbol.setFont(CARD_OFFSET_FONT[offset]);
-        TextComponent title1 = new TextComponent(title[0]);
-        title1.setFont(TEXT_OFFSET_FONT[offset]); title1.setColor(ChatColor.BLACK);
-        TextComponent title2 = new TextComponent(title[1]);
-        title2.setFont(TEXT_OFFSET_FONT[offset+1]); title2.setColor(ChatColor.BLACK);
-        TextComponent title3 = new TextComponent(title[2]);
-        title2.setFont(TEXT_OFFSET_FONT[offset+2]); title2.setColor(ChatColor.BLACK);
-
-        List<BaseComponent> card = new ArrayList<>();
-
-        card.add(cardSymbol);
-        card.add(Iter.offset(-3*title[0].length() - 30));
-        card.add(title1);
-        card.add(Iter.offset(-3*(title[0].length() + title[1].length() + 1)));
-        card.add(title2);
-        card.add(Iter.offset(-3*title[1].length() + 33));
-
-        return card;
     }
 
     // Utils
@@ -218,39 +190,65 @@ public class InfoDisplay {
         this.fakePlayer.removePassenger(fakePlayerInfoDisplay);
     }
 
-    private String[] titleSplit(String title) {
-        if (title.length() <= 9)
-            return new String[]{title, ""};
+    private static final String[] CARD_OFFSET_FONT = new String[]{"cards", "cards_low"};
+    private static final String[] TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3"};
 
-        // Get space char closest to the middle, both sides
-        int splitIndex = title.length() / 2;
-        boolean spaceFound = false;
-        for (int i = splitIndex; i < title.length(); i++) {
-            try {
-                if (title.charAt(i) == ' ') {
-                    splitIndex = i;
-                    spaceFound = true;
-                    break;
-                }
-                if (title.charAt(title.length() - i) == ' ') {
-                    splitIndex = title.length() - i;
-                    spaceFound = true;
-                    break;
-                }
-            } catch (Exception ignored) {}
-        }
+    private List<BaseComponent> actionbarCard(GameItem item, boolean expanded) {
+        String[] title = cardTitle(item.getName());
+        int offset = expanded?0:1;
 
-        return new String[]{
-                title.substring(0, splitIndex) + (spaceFound?"":"-"),
-                title.substring(splitIndex)
+        TextComponent cardSymbol = new TextComponent(String.valueOf(item.getCardSymbol()));
+        cardSymbol.setFont(CARD_OFFSET_FONT[offset]);
+        TextComponent title1 = new TextComponent(title[0]);
+        title1.setFont(TEXT_OFFSET_FONT[offset]); title1.setColor(ChatColor.BLACK);
+        TextComponent title2 = new TextComponent(title[1]);
+        title2.setFont(TEXT_OFFSET_FONT[offset+1]); title2.setColor(ChatColor.BLACK);
+        TextComponent title3 = new TextComponent(title[2]);
+        title3.setFont(TEXT_OFFSET_FONT[offset+2]); title3.setColor(ChatColor.BLACK);
+
+        List<BaseComponent> card = new ArrayList<>();
+
+        card.add(cardSymbol);
+        card.add(Iter.offset(-3*title[0].length() - 30));
+        card.add(title1);
+        card.add(Iter.offset(-3*(title[0].length() + title[1].length())));
+        card.add(title2);
+        card.add(Iter.offset(-3*(title[1].length() + title[2].length())));
+        card.add(title3);
+        card.add(Iter.offset(-3*title[2].length() + 30));
+
+        return card;
+    }
+
+    private String[] cardTitle(String title) {
+        List<String> split = titleSplit(title);
+        return switch (split.size()) {
+            case 1 -> new String[]{"", split.get(0), ""};
+            case 2 -> new String[]{split.get(0), split.get(1), ""};
+            default -> new String[]{split.get(0), split.get(1), split.get(2)};
         };
     }
 
-    // Getters
+    private final static int MAX_TITLE_WIDTH = 9;
+    private List<String> titleSplit(String title) {
+        if (title.length() <= MAX_TITLE_WIDTH)
+            return Lists.newArrayList(title);
 
-    public GamePlayer getGamePlayer() {
-        return gamePlayer;
+        boolean spaceFound = false;
+        int spaceIndex = MAX_TITLE_WIDTH - 1;
+        for (int i = MAX_TITLE_WIDTH; i >= 0; i--)
+            if (title.charAt(i) == ' ') {
+                spaceIndex = i;
+                spaceFound = true;
+                break;
+            }
+
+        List<String> split = titleSplit(title.substring(spaceIndex+(spaceFound?1:0)));
+        split.addFirst(title.substring(0, spaceIndex) + (spaceFound?"":"-"));
+        return split;
     }
+
+    // Getters
 
     public Player getPlayer() {
         return player;
