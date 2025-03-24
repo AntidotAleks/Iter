@@ -155,7 +155,7 @@ public class InfoDisplay {
 
     public void cardList() {
         BaseComponent[] itemsAsText = gamePlayer.getItems().stream()
-                .flatMap(item -> card(item, false).stream())
+                .flatMap(item -> actionbarCard(item, false).stream())
                 .toArray(BaseComponent[]::new);
         System.out.println(Arrays.toString(itemsAsText));
 
@@ -168,15 +168,20 @@ public class InfoDisplay {
 
     }
 
-    public List<BaseComponent> card(GameItem item, boolean withDescription) {
+    private static final String[] CARD_OFFSET_FONT = new String[]{"cards", "cards_low"};
+    private static final String[] TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3"};
+    private List<BaseComponent> actionbarCard(GameItem item, boolean expanded) {
         String[] title = titleSplit(item.getName());
+        int offset = expanded?0:1;
 
         TextComponent cardSymbol = new TextComponent(String.valueOf(item.getCardSymbol()));
-        cardSymbol.setFont("cards");
+        cardSymbol.setFont(CARD_OFFSET_FONT[offset]);
         TextComponent title1 = new TextComponent(title[0]);
-        title1.setFont("mono"); title1.setColor(ChatColor.BLACK);
+        title1.setFont(TEXT_OFFSET_FONT[offset]); title1.setColor(ChatColor.BLACK);
         TextComponent title2 = new TextComponent(title[1]);
-        title2.setFont("mono_low1"); title2.setColor(ChatColor.BLACK);
+        title2.setFont(TEXT_OFFSET_FONT[offset+1]); title2.setColor(ChatColor.BLACK);
+        TextComponent title3 = new TextComponent(title[2]);
+        title2.setFont(TEXT_OFFSET_FONT[offset+2]); title2.setColor(ChatColor.BLACK);
 
         List<BaseComponent> card = new ArrayList<>();
 
