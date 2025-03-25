@@ -98,6 +98,6 @@ public class ItemWalk extends GameItem implements PreUsed {
 
     @Override
     public char getCardSymbol() {
-        return '\u0001';
+        return '\uE101';
     }
 }

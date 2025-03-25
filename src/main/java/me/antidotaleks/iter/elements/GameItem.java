@@ -33,7 +33,7 @@ public abstract class GameItem implements GameItemInterface {
     }
 
     public char getCardSymbol() {
-        return '\u0001';
+        return '\uE100';
     }
 
     protected static int tilesAway(Point coords1, Point coords2) {

@@ -45,7 +45,7 @@ public class ItemBasePunch extends GameItem {
 
     @Override
     public char getCardSymbol() {
-        return '\u0002';
+        return '\uE102';
     }
 
     private void particles(Point from, Point to) {

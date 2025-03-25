@@ -5,10 +5,13 @@ import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.FakePlayer;
 import me.antidotaleks.iter.elements.GameItem;
 import me.antidotaleks.iter.elements.GamePlayer;
+import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
+import net.megavex.scoreboardlibrary.api.sidebar.Sidebar;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -18,7 +21,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.scoreboard.*;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
 import org.joml.Vector3f;
@@ -52,6 +54,7 @@ public class InfoDisplay {
 
         cursor = newCursor();
         newCursorUpdater();
+        createScoreboard();
 
         updateData();
     }
@@ -156,7 +159,7 @@ public class InfoDisplay {
 
     public void cardList() {
         BaseComponent[] itemsAsText = gamePlayer.getItems().stream()
-                .flatMap(item -> actionbarCard(item, false).stream())
+                .flatMap(item -> actionbarCard(item, true).stream())
                 .toArray(BaseComponent[]::new);
 
         new BukkitRunnable() {
@@ -174,6 +177,7 @@ public class InfoDisplay {
         dismount();
         infoDisplay.remove();
         fakePlayerInfoDisplay.remove();
+        removeScoreboard();
 
         try {
             cursorUpdater.cancel();
@@ -200,23 +204,21 @@ public class InfoDisplay {
 
         TextComponent cardSymbol = new TextComponent(String.valueOf(item.getCardSymbol()));
         cardSymbol.setFont(CARD_OFFSET_FONT[offset]);
-        TextComponent title1 = new TextComponent(title[0]);
-        title1.setFont(TEXT_OFFSET_FONT[offset]); title1.setColor(ChatColor.BLACK);
-        TextComponent title2 = new TextComponent(title[1]);
-        title2.setFont(TEXT_OFFSET_FONT[offset+1]); title2.setColor(ChatColor.BLACK);
-        TextComponent title3 = new TextComponent(title[2]);
-        title3.setFont(TEXT_OFFSET_FONT[offset+2]); title3.setColor(ChatColor.BLACK);
 
         List<BaseComponent> card = new ArrayList<>();
-
         card.add(cardSymbol);
-        card.add(Iter.offset(-3*title[0].length() - 30));
-        card.add(title1);
-        card.add(Iter.offset(-3*(title[0].length() + title[1].length())));
-        card.add(title2);
-        card.add(Iter.offset(-3*(title[1].length() + title[2].length())));
-        card.add(title3);
-        card.add(Iter.offset(-3*title[2].length() + 30));
+
+        for (int i = 0; i < 3; i++) {
+            BaseComponent line = new TextComponent(title[i]);
+            line.setFont(TEXT_OFFSET_FONT[offset+i]);
+            line.setColor(ChatColor.BLACK);
+            card.add(line);
+        }
+
+        card.add(1, Iter.offset(-3*title[0].length() - 30));
+        card.add(3, Iter.offset(-3*(title[0].length() + title[1].length())));
+        card.add(5, Iter.offset(-3*(title[1].length() + title[2].length())));
+        card.add(7, Iter.offset(-3*title[2].length() + 30));
 
         return card;
     }
@@ -250,12 +252,15 @@ public class InfoDisplay {
     }
 
     public void createScoreboard() {
-        Scoreboard scoreboard = player.getScoreboard();
-        Objective objective = scoreboard.getObjective(DisplaySlot.SIDEBAR);
-        if (objective == null)
-            scoreboard.registerNewObjective(player.getName(), Criteria.DUMMY, "");
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
+        ScoreboardLibrary sl = Iter.scoreboardLibrary;
+        Sidebar sidebar = sl.createSidebar(8);
+        sidebar.addPlayer(player);
 
+        sidebar.line(0, Component.text( "\uE101\uDAFF\uDFC0\uE001"));
+    }
+
+    public void removeScoreboard() {
+        // Nothing I guess
     }
 
     // Getters

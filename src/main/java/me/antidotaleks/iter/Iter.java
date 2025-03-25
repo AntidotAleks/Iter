@@ -3,6 +3,9 @@ package me.antidotaleks.iter;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import net.md_5.bungee.api.chat.TranslatableComponent;
+import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
+import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
+import net.megavex.scoreboardlibrary.api.noop.NoopScoreboardLibrary;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -19,10 +22,17 @@ public final class Iter extends JavaPlugin {
         // Register custom events
 
         plugin = this;
-        logger = Logger.getLogger("Iter");
+        logger = getLogger();
         overworld = Bukkit.getWorlds().getFirst();
         pluginFolder = getDataFolder();
         protocolManager = ProtocolLibrary.getProtocolManager();
+        try {
+            scoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(plugin);
+        } catch (NoPacketAdapterAvailableException e) {
+            // If no packet adapter was found, fallback to the no-op implementation:
+            scoreboardLibrary = new NoopScoreboardLibrary();
+            plugin.getLogger().warning("No scoreboard packet adapter available!");
+        }
 
         Iter.logger.info("[Iter] Registering event listeners");
         SetupManager.registerListeners();
@@ -43,8 +53,9 @@ public final class Iter extends JavaPlugin {
     public void onDisable() {
         while (!GameManager.games.isEmpty()) {
             GameManager.stopGame(GameManager.games.getLast());
-
         }
+
+        scoreboardLibrary.close();
     }
 
     public static TranslatableComponent offset(int offset) {
@@ -58,6 +69,7 @@ public final class Iter extends JavaPlugin {
     public static World overworld;
     public static File pluginFolder;
     public static ProtocolManager protocolManager;
+    public static ScoreboardLibrary scoreboardLibrary;
 
 
     public static final BlockData AIR_DATA = Bukkit.createBlockData(Material.AIR);
