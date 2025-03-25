@@ -69,16 +69,13 @@ tasks.withType<Javadoc> {
 
 
 tasks.named<ShadowJar>("shadowJar") {
-    archiveBaseName.set("${rootProject.name}")  // Set the base name for the JAR
-    archiveVersion.set("$version")                 // Set the version of the JAR
-    mergeServiceFiles()                          // Merges service files if needed (e.g., META-INF/services)
-
-    // Optionally, exclude some files or dependencies
-    exclude("**/some/file/to/exclude/**")
+    archiveBaseName.set(rootProject.name)
+    archiveVersion.set("$version")
+    mergeServiceFiles()
 }
 
 tasks.register<Copy>("copyJarToPluginFolder") {
-    dependsOn(tasks.named("jar")) // Ensure the JAR is built before copying
+    dependsOn(tasks.named("jar"))
     from(layout.buildDirectory.file("libs/${project.name}-${version}.jar"))
     into("G:/Games/Minecraft/Server/iter/plugins")
     // rename { fileName -> fileName.replace("-all.jar", ".jar") }
