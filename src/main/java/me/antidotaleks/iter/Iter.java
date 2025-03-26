@@ -2,6 +2,7 @@ package me.antidotaleks.iter;
 
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
+import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.md_5.bungee.api.chat.TranslatableComponent;
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
@@ -33,6 +34,7 @@ public final class Iter extends JavaPlugin {
             scoreboardLibrary = new NoopScoreboardLibrary();
             logger.warning("No scoreboard packet adapter available!");
         }
+        audiences = BukkitAudiences.create(plugin);
 
         Iter.logger.info("[Iter] Registering event listeners");
         SetupManager.registerListeners();
@@ -70,6 +72,7 @@ public final class Iter extends JavaPlugin {
     public static File pluginFolder;
     public static ProtocolManager protocolManager;
     public static ScoreboardLibrary scoreboardLibrary;
+    public static BukkitAudiences audiences;
 
 
     public static final BlockData AIR_DATA = Bukkit.createBlockData(Material.AIR);
