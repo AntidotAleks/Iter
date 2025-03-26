@@ -74,7 +74,6 @@ public class ItemWalk extends GameItem implements PreUsed {
     @Override
     public void preUse(Point coords) {
         nextStep.add(coords);
-
     }
 
     public void undoPreUse() {
@@ -98,6 +97,6 @@ public class ItemWalk extends GameItem implements PreUsed {
 
     @Override
     public char getCardSymbol() {
-        return '\uE101';
+        return '\uE001';
     }
 }

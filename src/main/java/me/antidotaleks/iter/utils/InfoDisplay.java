@@ -5,7 +5,12 @@ import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.FakePlayer;
 import me.antidotaleks.iter.elements.GameItem;
 import me.antidotaleks.iter.elements.GamePlayer;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.ComponentLike;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -27,6 +32,7 @@ import org.joml.Vector3f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class InfoDisplay {
 
@@ -54,7 +60,8 @@ public class InfoDisplay {
 
         cursor = newCursor();
         newCursorUpdater();
-        createScoreboard();
+        updateInventory();
+        updateCards();
 
         updateData();
     }
@@ -142,6 +149,39 @@ public class InfoDisplay {
         fakePlayerInfoDisplay.setText(infoString);
     }
 
+    Sidebar sidebar = null;
+    private BaseComponent[] cardListToShow = new BaseComponent[0];
+
+    public void updateCards() {
+        int index = gamePlayer.getCurrentItemIndex();
+
+        cardListToShow = cards.get(index).getKey();
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, cardListToShow);
+
+        if (sidebar == null) {
+            ScoreboardLibrary sl = Iter.scoreboardLibrary;
+            sidebar = sl.createSidebar(15);
+            sidebar.addPlayer(player);
+
+            new BukkitRunnable() {@Override public void run() {
+                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, cardListToShow);
+            }}.runTaskTimer(Iter.plugin, 0, 15);
+        }
+
+        ComponentLike[] sidebarCard = cards.get(index).getValue();
+        for (int i = 0; i < sidebarCard.length; i++)
+            sidebar.line(i, sidebarCard[i]);
+    }
+
+    ArrayList<Map.Entry<BaseComponent[], ComponentLike[]>> cards = new ArrayList<>();
+    public void updateInventory() {
+        for (int i = 0; i < gamePlayer.getItems().size(); i++) {
+            GameItem item = gamePlayer.getItems().get(i);
+
+            cards.add(Map.entry(cardList(i), sidebarCard(item)));
+        }
+    }
+
     public void showCursor() {
         player.showEntity(Iter.plugin, cursor);
         cursorUpdater.runTaskTimerAsynchronously(Iter.plugin, 0, 1);
@@ -157,18 +197,11 @@ public class InfoDisplay {
 
     // UI
 
-    public void cardList() {
-        BaseComponent[] itemsAsText = gamePlayer.getItems().stream()
-                .flatMap(item -> actionbarCard(item, true).stream())
+    public BaseComponent[] cardList(int activeIndex) {
+        final int[] i = {0};
+        return gamePlayer.getItems().stream()
+                .flatMap(item -> actionbarCard(item, i[0]++ == activeIndex).stream())
                 .toArray(BaseComponent[]::new);
-
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, itemsAsText);
-            }
-        }.runTaskTimer(Iter.plugin, 0, 10);
-
     }
 
     // Utils
@@ -177,7 +210,6 @@ public class InfoDisplay {
         dismount();
         infoDisplay.remove();
         fakePlayerInfoDisplay.remove();
-        removeScoreboard();
 
         try {
             cursorUpdater.cancel();
@@ -198,7 +230,7 @@ public class InfoDisplay {
     private static final String[] CARD_OFFSET_FONT = new String[]{"cards", "cards_low"};
     private static final String[] TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3"};
 
-    private List<BaseComponent> actionbarCard(GameItem item, boolean expanded) {
+    private static List<BaseComponent> actionbarCard(GameItem item, boolean expanded) {
         String[] title = cardTitle(item.getName());
         int offset = expanded?0:1;
 
@@ -223,7 +255,27 @@ public class InfoDisplay {
         return card;
     }
 
-    private String[] cardTitle(String title) {
+    private static final String[] CARD_OFFSETS = new String[]{"\uDB00\uDC30", "\uDAFF\uDF89"};
+    private static final String CARD_BACKSIDE = "\uEFFF";
+    private static final TextColor BLACK = TextColor.color(0,0,0);
+    private static final TextColor WHITE = TextColor.color(255,255,255);
+
+    private static ComponentLike[] sidebarCard(GameItem item) {
+        ComponentLike[] card = new ComponentLike[10];
+
+        card[0] = Component.text(CARD_OFFSETS[0])
+                .append(translatable(item.getCardSymbol()+"", WHITE, "cards"))
+                .append(Component.text(CARD_OFFSETS[1]))
+                .append(translatable(CARD_BACKSIDE, WHITE, "cards"));
+        card[1] = Component.empty();
+        for (int i = 1; i <= 8; i++) {
+            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, BLACK, "mono");
+        }
+
+        return card;
+    }
+
+    private static String[] cardTitle(String title) {
         List<String> split = titleSplit(title);
         return switch (split.size()) {
             case 1 -> new String[]{"", split.get(0), ""};
@@ -233,7 +285,7 @@ public class InfoDisplay {
     }
 
     private final static int MAX_TITLE_WIDTH = 9;
-    private List<String> titleSplit(String title) {
+    private static List<String> titleSplit(String title) {
         if (title.length() <= MAX_TITLE_WIDTH)
             return Lists.newArrayList(title);
 
@@ -251,18 +303,6 @@ public class InfoDisplay {
         return split;
     }
 
-    public void createScoreboard() {
-        ScoreboardLibrary sl = Iter.scoreboardLibrary;
-        Sidebar sidebar = sl.createSidebar(8);
-        sidebar.addPlayer(player);
-
-        sidebar.line(0, Component.text( "\uE101\uDAFF\uDFC0\uE001"));
-    }
-
-    public void removeScoreboard() {
-        // Nothing I guess
-    }
-
     // Getters
 
     public GamePlayer getGamePlayer() {
@@ -271,5 +311,13 @@ public class InfoDisplay {
 
     public Player getPlayer() {
         return player;
+    }
+
+    private static TranslatableComponent translatable(String key, TextColor color, String font) {
+        return Component.translatable(key).style(Style.style().color(color).font(Key.key(font)).build());
+    }
+
+    private static net.kyori.adventure.text.TextComponent textComponent(String text, TextColor color, String font) {
+        return Component.text(text).style(Style.style().color(color).font(Key.key(font)).build());
     }
 }

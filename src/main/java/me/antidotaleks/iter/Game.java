@@ -103,7 +103,6 @@ public class Game implements Listener {
                 GamePlayer gamePlayer = teams[teamIndex][playerIndex];
 
                 gamePlayer.getInfoDisplay().mount();
-                gamePlayer.getInfoDisplay().cardList();
                 gamePlayer.setPosition(gamePlayer.getPosition());
             }
         }

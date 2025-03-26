@@ -3,6 +3,7 @@ package me.antidotaleks.iter.elements;
 import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.items.ItemBasePunch;
+import me.antidotaleks.iter.elements.items.ItemSwiftStep;
 import me.antidotaleks.iter.elements.items.ItemWalk;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.utils.InfoDisplay;
@@ -68,6 +69,10 @@ public final class GamePlayer implements Listener {
         this.player = player;
         this.game = game;
         modifiers(modifiers, disbalanceModifier);
+
+        itemWalk = new ItemWalk(this);
+        manageItems();
+
         teamDetails = game.getTeamDetails(player);
         fakePlayer = new FakePlayer(this);
         infoDisplay = new InfoDisplay(this);
@@ -79,13 +84,13 @@ public final class GamePlayer implements Listener {
         setPosition(spawnPosition);
 
         // Items
-
-        itemWalk = new ItemWalk(this);
-
-        items.add(itemWalk);
-        items.add(new ItemBasePunch(this));
     }
 
+    private void manageItems() {
+        items.add(itemWalk);
+        items.add(new ItemSwiftStep(this));
+        items.add(new ItemBasePunch(this));
+    }
 
 
     public void modifiers(ConfigurationSection modifiers, double disbalanceModifier) {
@@ -144,11 +149,12 @@ public final class GamePlayer implements Listener {
             return;
         event.setCancelled(true);
 
-        slotSelected = (slotSelected + 1) % items.size();
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(
-            "Selected item: " + List.of(items.get(slotSelected).getClass().getName().split("\\.")).getLast() +
-            " (" + (slotSelected+1) + "/" + items.size() + ")"
-        ));
+        if (!player.isSneaking())
+            slotSelected = (slotSelected + 1) % items.size();
+        else
+            slotSelected = (slotSelected - 1 + items.size()) % items.size();
+
+        infoDisplay.updateCards();
     }
 
     // Turns
@@ -382,6 +388,14 @@ public final class GamePlayer implements Listener {
         return List.copyOf(items);
     }
 
+    public int getCurrentItemIndex() {
+        return slotSelected;
+    }
+
+    public GameItem getCurrentItem() {
+        return items.get(slotSelected);
+    }
+
     public List<Map.Entry<GameItem, Point>> getItemsUsed() {
         return Collections.unmodifiableList(itemsUsed);
     }
@@ -401,5 +415,4 @@ public final class GamePlayer implements Listener {
     public FakePlayer getFakePlayer() {
         return fakePlayer;
     }
-
 }

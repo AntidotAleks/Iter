@@ -43,7 +43,7 @@ dependencies {
     runtimeOnly("net.megavex:scoreboard-library-implementation:$scoreboardLibraryVersion")
     implementation("net.megavex:scoreboard-library-extra-kotlin:$scoreboardLibraryVersion")
     runtimeOnly("net.megavex:scoreboard-library-modern:$scoreboardLibraryVersion")
-    implementation("net.kyori:adventure-api:4.19.0")
+    implementation("net.kyori:adventure-platform-bukkit:4.0.1")
 
 }
 
@@ -76,12 +76,12 @@ tasks.named<ShadowJar>("shadowJar") {
 
 tasks.register<Copy>("copyJarToPluginFolder") {
     dependsOn(tasks.named("jar"))
-    from(layout.buildDirectory.file("libs/${project.name}-${version}.jar"))
+    from(layout.buildDirectory.file("libs/${project.name}-${version}-all.jar"))
     into("G:/Games/Minecraft/Server/iter/plugins")
-    // rename { fileName -> fileName.replace("-all.jar", ".jar") }
+    rename { fileName -> fileName.replace("-all.jar", ".jar") }
 }
 
 tasks.named("build") {
-    // dependsOn("shadowJar")
+     dependsOn("shadowJar")
     finalizedBy("copyJarToPluginFolder")
 }

@@ -26,12 +26,12 @@ public final class Iter extends JavaPlugin {
         overworld = Bukkit.getWorlds().getFirst();
         pluginFolder = getDataFolder();
         protocolManager = ProtocolLibrary.getProtocolManager();
+
         try {
             scoreboardLibrary = ScoreboardLibrary.loadScoreboardLibrary(plugin);
         } catch (NoPacketAdapterAvailableException e) {
-            // If no packet adapter was found, fallback to the no-op implementation:
             scoreboardLibrary = new NoopScoreboardLibrary();
-            plugin.getLogger().warning("No scoreboard packet adapter available!");
+            logger.warning("No scoreboard packet adapter available!");
         }
 
         Iter.logger.info("[Iter] Registering event listeners");
