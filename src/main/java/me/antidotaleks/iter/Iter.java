@@ -3,7 +3,7 @@ package me.antidotaleks.iter;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
-import net.md_5.bungee.api.chat.TranslatableComponent;
+import net.kyori.adventure.text.Component;
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
 import net.megavex.scoreboardlibrary.api.noop.NoopScoreboardLibrary;
@@ -60,10 +60,6 @@ public final class Iter extends JavaPlugin {
         scoreboardLibrary.close();
     }
 
-    public static TranslatableComponent offset(int offset) {
-        if (offset < -8192 || offset > 8192) throw new IllegalArgumentException("Offset out of bounds, must be in [-8192, 8192]");
-        return new TranslatableComponent("space." + offset);
-    }
 
 
     public static Iter plugin;

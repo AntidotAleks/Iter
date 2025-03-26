@@ -3,32 +3,32 @@ package me.antidotaleks.iter.elements.items;
 import me.antidotaleks.iter.elements.Cooldown;
 import me.antidotaleks.iter.elements.GamePlayer;
 
-public class ItemSwiftStep extends ItemWalk implements Cooldown {
+public class Test1 extends ItemWalk implements Cooldown {
     /**
      * Item that allows the player to walk
      * @param player the player that owns the item
      */
-    public ItemSwiftStep(GamePlayer player) {
+    public Test1(GamePlayer player) {
         super(player);
     }
 
     @Override
     public int getEnergyUsage() {
-        return 0;
+        return 10;
     }
 
     @Override
     public String getName() {
-        return "Swift Step";
+        return "Test1";
     }
 
     @Override
     public char getCardSymbol() {
-        return '\uE003';
+        return '\uE004';
     }
 
     @Override
     public int getCooldown() {
-        return 2;
+        return 12;
     }
 }

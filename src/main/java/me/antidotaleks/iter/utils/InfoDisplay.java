@@ -2,9 +2,8 @@ package me.antidotaleks.iter.utils;
 
 import com.google.common.collect.Lists;
 import me.antidotaleks.iter.Iter;
-import me.antidotaleks.iter.elements.FakePlayer;
-import me.antidotaleks.iter.elements.GameItem;
-import me.antidotaleks.iter.elements.GamePlayer;
+import me.antidotaleks.iter.elements.*;
+import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.ComponentLike;
@@ -13,7 +12,6 @@ import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.sidebar.Sidebar;
@@ -39,6 +37,7 @@ public class InfoDisplay {
     private final GamePlayer gamePlayer;
     private final FakePlayer fakePlayer;
     private final Player player;
+    private final Audience audience;
     private final TeamDetails teamDetails;
 
     private final TextDisplay infoDisplay;
@@ -52,7 +51,8 @@ public class InfoDisplay {
         this.gamePlayer = player;
         this.fakePlayer = player.getFakePlayer();
         this.player = player.getPlayer();
-        teamDetails = gamePlayer.getTeamDetails();
+        this.audience = Iter.audiences.player(this.player);
+        this.teamDetails = gamePlayer.getTeamDetails();
 
         // Create displays
         infoDisplay = newNicknameInfo(true);
@@ -150,22 +150,23 @@ public class InfoDisplay {
     }
 
     Sidebar sidebar = null;
-    private BaseComponent[] cardListToShow = new BaseComponent[0];
+    private ComponentLike cardListToShow = null;
+    BukkitRunnable cardUpdater = null;
 
     public void updateCards() {
         int index = gamePlayer.getCurrentItemIndex();
-
         cardListToShow = cards.get(index).getKey();
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, cardListToShow);
+        audience.sendActionBar(cardListToShow);
 
         if (sidebar == null) {
             ScoreboardLibrary sl = Iter.scoreboardLibrary;
             sidebar = sl.createSidebar(15);
             sidebar.addPlayer(player);
 
-            new BukkitRunnable() {@Override public void run() {
-                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, cardListToShow);
-            }}.runTaskTimer(Iter.plugin, 0, 15);
+            cardUpdater = new BukkitRunnable() {@Override public void run() {
+                audience.sendActionBar(cardListToShow);
+            }};
+            cardUpdater.runTaskTimer(Iter.plugin, 0, 15);
         }
 
         ComponentLike[] sidebarCard = cards.get(index).getValue();
@@ -173,7 +174,7 @@ public class InfoDisplay {
             sidebar.line(i, sidebarCard[i]);
     }
 
-    ArrayList<Map.Entry<BaseComponent[], ComponentLike[]>> cards = new ArrayList<>();
+    ArrayList<Map.Entry<ComponentLike, ComponentLike[]>> cards = new ArrayList<>();
     public void updateInventory() {
         for (int i = 0; i < gamePlayer.getItems().size(); i++) {
             GameItem item = gamePlayer.getItems().get(i);
@@ -197,11 +198,10 @@ public class InfoDisplay {
 
     // UI
 
-    public BaseComponent[] cardList(int activeIndex) {
+    public Component cardList(int activeIndex) {
         final int[] i = {0};
         return gamePlayer.getItems().stream()
-                .flatMap(item -> actionbarCard(item, i[0]++ == activeIndex).stream())
-                .toArray(BaseComponent[]::new);
+                .map(item -> actionbarCard(item, i[0]++ == activeIndex)).reduce(Component.empty(), Component::append).compact();
     }
 
     // Utils
@@ -210,6 +210,11 @@ public class InfoDisplay {
         dismount();
         infoDisplay.remove();
         fakePlayerInfoDisplay.remove();
+        if (sidebar != null)
+            sidebar.close();
+        if (cardUpdater != null)
+            cardUpdater.cancel();
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent());
 
         try {
             cursorUpdater.cancel();
@@ -227,51 +232,101 @@ public class InfoDisplay {
         this.fakePlayer.removePassenger(fakePlayerInfoDisplay);
     }
 
-    private static final String[] CARD_OFFSET_FONT = new String[]{"cards", "cards_low"};
-    private static final String[] TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3"};
+    // Adventure API components generators for cards
 
-    private static List<BaseComponent> actionbarCard(GameItem item, boolean expanded) {
+    private static final TextColor
+            BLACK = TextColor.color(0,0,0),
+            WHITE = TextColor.color(255,255,255);
+    private static final String[]
+            CARD_OFFSET_FONT = new String[]{"cards", "cards_low"},
+            TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3"};
+
+    private Component actionbarCard(GameItem item, boolean raised) {
         String[] title = cardTitle(item.getName());
-        int offset = expanded?0:1;
+        int offset = raised?0:1;
 
-        TextComponent cardSymbol = new TextComponent(String.valueOf(item.getCardSymbol()));
-        cardSymbol.setFont(CARD_OFFSET_FONT[offset]);
+        Component card = cardInfoBase(item, raised);
 
-        List<BaseComponent> card = new ArrayList<>();
-        card.add(cardSymbol);
-
+        Component[] offsets = new Component[]{
+                offset(-3*title[0].length() - 30),
+                offset(-3*(title[0].length() + title[1].length())),
+                offset(-3*(title[1].length() + title[2].length())),
+                offset(-3*title[2].length() + 30)
+        };
         for (int i = 0; i < 3; i++) {
-            BaseComponent line = new TextComponent(title[i]);
-            line.setFont(TEXT_OFFSET_FONT[offset+i]);
-            line.setColor(ChatColor.BLACK);
-            card.add(line);
-        }
+            Component line = Component.text(title[i])
+                    .style(Style.style().font(Key.key(TEXT_OFFSET_FONT[offset+i])).color(BLACK));
 
-        card.add(1, Iter.offset(-3*title[0].length() - 30));
-        card.add(3, Iter.offset(-3*(title[0].length() + title[1].length())));
-        card.add(5, Iter.offset(-3*(title[1].length() + title[2].length())));
-        card.add(7, Iter.offset(-3*title[2].length() + 30));
+            card = card.append(offsets[i]);
+            card = card.append(line);
+        }
+        card = card.append(offsets[offsets.length-1]);
 
         return card;
     }
 
-    private static final String[] CARD_OFFSETS = new String[]{"\uDB00\uDC30", "\uDAFF\uDF89"};
+    private static final String[] SIDEBAR_CARD_OFFSETS = new String[]{"\uDB00\uDC30", "\uDAFF\uDF89"};
     private static final String CARD_BACKSIDE = "\uEFFF";
-    private static final TextColor BLACK = TextColor.color(0,0,0);
-    private static final TextColor WHITE = TextColor.color(255,255,255);
 
-    private static ComponentLike[] sidebarCard(GameItem item) {
-        ComponentLike[] card = new ComponentLike[10];
+    private static Component[] sidebarCard(GameItem item) {
+        Component[] card = new Component[10];
 
-        card[0] = Component.text(CARD_OFFSETS[0])
-                .append(translatable(item.getCardSymbol()+"", WHITE, "cards"))
-                .append(Component.text(CARD_OFFSETS[1]))
-                .append(translatable(CARD_BACKSIDE, WHITE, "cards"));
+        card[0] = Component.text(SIDEBAR_CARD_OFFSETS[0])
+                .append(cardInfoBase(item, true))
+                .append(Component.text(SIDEBAR_CARD_OFFSETS[1]))
+                .append(translatable(CARD_BACKSIDE, "cards"));
         card[1] = Component.empty();
         for (int i = 1; i <= 8; i++) {
             card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, BLACK, "mono");
         }
 
+        return card;
+    }
+
+    private static final int
+            CHAR_WIDTH = 8,
+            DIGIT_WIDTH = 5,
+            SPACE_WIDTH = 15;
+
+    private static Component cardInfoBase(GameItem item, boolean raised) {
+        int offset = raised?0:1;
+        Component card = translatable(item.getCardSymbol()+"", CARD_OFFSET_FONT[offset])
+                .append(offset(-57));
+
+        final Style digitsStyle = Style.style().color(BLACK).font(Key.key(CARD_OFFSET_FONT[offset])).build();
+
+        // Item with rounds Cooldown
+
+        if (item instanceof Cooldown itemCooldown)
+            card = card
+                    .append(translatable("\uEFF0", CARD_OFFSET_FONT[offset]))
+                    .append(Component.text(itemCooldown.getCooldown(), digitsStyle))
+                    .append(offset((SPACE_WIDTH-2 - String.valueOf(itemCooldown.getCooldown()).length() * DIGIT_WIDTH))); // why tf is this -2? Why not -1? Why it works?
+        else
+            card = card.append(offset(CHAR_WIDTH-1 + SPACE_WIDTH));
+
+        // Item with Conditional usage
+
+        if (item instanceof Conditional)
+            card = card
+                    .append(translatable("\uEFF1", CARD_OFFSET_FONT[offset]));
+        else
+            card = card.append(offset(CHAR_WIDTH));
+
+        // Item with Energy usage
+
+        int energy = item.getEnergyUsage();
+        if (energy != 0)
+            card = card
+                    .append(offset((SPACE_WIDTH - String.valueOf(energy).length() * DIGIT_WIDTH)))
+                    .append(Component.text(energy, digitsStyle))
+                    .append(translatable("\uEFF2", CARD_OFFSET_FONT[offset]))
+                    .append(offset(4));
+        else
+            card = card.append(offset(CHAR_WIDTH + SPACE_WIDTH + 4));
+
+
+        Iter.logger.info(card.compact().insertion());
         return card;
     }
 
@@ -313,6 +368,16 @@ public class InfoDisplay {
         return player;
     }
 
+    public static TranslatableComponent offset(int offset) {
+        if (offset < -8192 || offset > 8192) throw new IllegalArgumentException("Offset out of bounds, must be in [-8192, 8192]");
+        return translatable("space."+offset);
+    }
+    private static TranslatableComponent translatable(String key) {
+        return translatable(key, WHITE, "default");
+    }
+    private static TranslatableComponent translatable(String key, String font) {
+        return translatable(key, WHITE, font);
+    }
     private static TranslatableComponent translatable(String key, TextColor color, String font) {
         return Component.translatable(key).style(Style.style().color(color).font(Key.key(font)).build());
     }

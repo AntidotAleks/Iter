@@ -35,7 +35,7 @@ public class TeamDisplay {
 
     private Audience getTeamAudience(Player[] players) {
         return Audience.audience(
-                Arrays.stream(players).map(p->Iter.audiences.player(p)).toList()
+                Arrays.stream(players).map(Iter.audiences::player).toList()
         );
     }
 

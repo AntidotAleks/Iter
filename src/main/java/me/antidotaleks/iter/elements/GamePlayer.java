@@ -2,15 +2,11 @@ package me.antidotaleks.iter.elements;
 
 import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
-import me.antidotaleks.iter.elements.items.ItemBasePunch;
-import me.antidotaleks.iter.elements.items.ItemSwiftStep;
-import me.antidotaleks.iter.elements.items.ItemWalk;
+import me.antidotaleks.iter.elements.items.*;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.utils.InfoDisplay;
 import me.antidotaleks.iter.utils.TeamDetails;
 import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.block.data.BlockData;
@@ -90,6 +86,9 @@ public final class GamePlayer implements Listener {
         items.add(itemWalk);
         items.add(new ItemSwiftStep(this));
         items.add(new ItemBasePunch(this));
+        items.add(new Test1(this));
+        items.add(new Test2(this));
+        items.add(new Test3(this));
     }
 
 
@@ -117,8 +116,6 @@ public final class GamePlayer implements Listener {
             return;
         event.setCancelled(true);
 
-        Iter.logger.info("Player interact event "+event.getAction().name());
-
         if (event.getAction() == Action.LEFT_CLICK_AIR)
             interact();
         else
@@ -136,9 +133,6 @@ public final class GamePlayer implements Listener {
         if(!canPlay)
             return;
 
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(
-                "Finished turn"
-        ));
         finishTurn();
     }
 
