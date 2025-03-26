@@ -1,7 +1,7 @@
 package me.antidotaleks.iter.elements.items;
 
-import me.antidotaleks.iter.elements.Cooldown;
 import me.antidotaleks.iter.elements.GamePlayer;
+import me.antidotaleks.iter.utils.items.Cooldown;
 
 public class ItemSwiftStep extends ItemWalk implements Cooldown {
     /**
@@ -18,6 +18,11 @@ public class ItemSwiftStep extends ItemWalk implements Cooldown {
     }
 
     @Override
+    public int getCooldown() {
+        return 2;
+    }
+
+    @Override
     public String getName() {
         return "Swift Step";
     }
@@ -25,10 +30,5 @@ public class ItemSwiftStep extends ItemWalk implements Cooldown {
     @Override
     public char getCardSymbol() {
         return '\uE003';
-    }
-
-    @Override
-    public int getCooldown() {
-        return 2;
     }
 }

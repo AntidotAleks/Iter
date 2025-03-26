@@ -2,7 +2,7 @@ package me.antidotaleks.iter.utils;
 
 import java.awt.*;
 
-public enum TeamDetails {
+public enum TeamStyling {
     // Pastel colors
     RED    (new Color(217, 93,  93 ),
             new Color(236, 204, 204)),
@@ -27,16 +27,16 @@ public enum TeamDetails {
     ;
 
     public final Color color, lightColor;
-    TeamDetails(Color color, Color lightColor) {
+    TeamStyling(Color color, Color lightColor) {
         this.color = color;
         this.lightColor = lightColor;
     }
 
-    public static TeamDetails[] getColors(int teamAmount) {
+    public static TeamStyling[] getColors(int teamAmount) {
         if(teamAmount > values().length)
             throw new IllegalArgumentException("Too many teams");
 
-        TeamDetails[] colors = new TeamDetails[teamAmount];
+        TeamStyling[] colors = new TeamStyling[teamAmount];
         System.arraycopy(values(), 0, colors, 0, teamAmount);
         return colors;
     }

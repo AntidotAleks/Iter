@@ -1,4 +1,4 @@
-package me.antidotaleks.iter.elements;
+package me.antidotaleks.iter.utils.items;
 
 public interface Cooldown {
     /**

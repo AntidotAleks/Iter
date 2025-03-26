@@ -1,6 +1,6 @@
 package me.antidotaleks.iter.elements.items;
 
-import me.antidotaleks.iter.elements.Cooldown;
+import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.elements.GamePlayer;
 
 public class Test1 extends ItemWalk implements Cooldown {

@@ -3,6 +3,9 @@ package me.antidotaleks.iter.utils;
 import com.google.common.collect.Lists;
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.*;
+import me.antidotaleks.iter.utils.items.Conditional;
+import me.antidotaleks.iter.utils.items.Cooldown;
+import me.antidotaleks.iter.utils.items.GameItem;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
@@ -32,13 +35,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class InfoDisplay {
+import static net.kyori.adventure.text.format.NamedTextColor.BLACK;
+import static net.kyori.adventure.text.format.NamedTextColor.WHITE;
+
+public final class InfoDisplay {
 
     private final GamePlayer gamePlayer;
     private final FakePlayer fakePlayer;
     private final Player player;
     private final Audience audience;
-    private final TeamDetails teamDetails;
+    private final TeamStyling teamStyling;
 
     private final TextDisplay infoDisplay;
     private final TextDisplay fakePlayerInfoDisplay;
@@ -52,7 +58,7 @@ public class InfoDisplay {
         this.fakePlayer = player.getFakePlayer();
         this.player = player.getPlayer();
         this.audience = Iter.audiences.player(this.player);
-        this.teamDetails = gamePlayer.getTeamDetails();
+        this.teamStyling = gamePlayer.getTeamDetails();
 
         // Create displays
         infoDisplay = newNicknameInfo(true);
@@ -139,11 +145,11 @@ public class InfoDisplay {
         int maxHealth = gamePlayer.getMaxHealth();
         int energy = gamePlayer.getEnergy();
         int maxEnergy = gamePlayer.getMaxEnergy();
-        String teamName = "Team " + teamDetails.toString();
+        String teamName = "Team " + teamStyling.toString();
 
         // Update scoreboard
         String infoString = String.format("%s%s: %s%s\n"+ ChatColor.of("#ff5252") +"❤%d/%d "+ChatColor.RESET+"| "+ChatColor.of("#5297ff")+"♦ %d/%d\n",
-                        ChatColor.of(teamDetails.color), teamName, ChatColor.of(teamDetails.lightColor), this.player.getName(), health, maxHealth, energy, maxEnergy);
+                        ChatColor.of(teamStyling.color), teamName, ChatColor.of(teamStyling.lightColor), this.player.getName(), health, maxHealth, energy, maxEnergy);
 
         infoDisplay.setText(infoString);
         fakePlayerInfoDisplay.setText(infoString);
@@ -234,9 +240,6 @@ public class InfoDisplay {
 
     // Adventure API components generators for cards
 
-    private static final TextColor
-            BLACK = TextColor.color(0,0,0),
-            WHITE = TextColor.color(255,255,255);
     private static final String[]
             CARD_OFFSET_FONT = new String[]{"cards", "cards_low"},
             TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3"};
@@ -380,9 +383,5 @@ public class InfoDisplay {
     }
     private static TranslatableComponent translatable(String key, TextColor color, String font) {
         return Component.translatable(key).style(Style.style().color(color).font(Key.key(font)).build());
-    }
-
-    private static net.kyori.adventure.text.TextComponent textComponent(String text, TextColor color, String font) {
-        return Component.text(text).style(Style.style().color(color).font(Key.key(font)).build());
     }
 }

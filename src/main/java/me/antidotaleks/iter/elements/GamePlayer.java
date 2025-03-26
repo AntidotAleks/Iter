@@ -4,8 +4,11 @@ import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.items.*;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
+import me.antidotaleks.iter.utils.FakePlayer;
 import me.antidotaleks.iter.utils.InfoDisplay;
-import me.antidotaleks.iter.utils.TeamDetails;
+import me.antidotaleks.iter.utils.TeamStyling;
+import me.antidotaleks.iter.utils.items.GameItem;
+import me.antidotaleks.iter.utils.items.PreUsed;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -34,7 +37,7 @@ public final class GamePlayer implements Listener {
 
     private final Player player;
     private final Game game;
-    private final TeamDetails teamDetails;
+    private final TeamStyling teamStyling;
     private final FakePlayer fakePlayer;
     private final InfoDisplay infoDisplay;
     private final Point pos = new Point();
@@ -44,8 +47,9 @@ public final class GamePlayer implements Listener {
     private final ArrayList<GameItem> items = new ArrayList<>();
     private int slotSelected = 0;
     private final ArrayList<Map.Entry<GameItem, Point>> itemsUsed = new ArrayList<>();
+    public final ArrayList<Point> nextStep = new ArrayList<>();
     // Necessary items
-    final ItemWalk itemWalk;
+    public final ItemWalk itemWalk;
 
     // Stats
 
@@ -69,13 +73,13 @@ public final class GamePlayer implements Listener {
         itemWalk = new ItemWalk(this);
         manageItems();
 
-        teamDetails = game.getTeamDetails(player);
+        teamStyling = game.getTeamDetails(player);
         fakePlayer = new FakePlayer(this);
         infoDisplay = new InfoDisplay(this);
 
         // Setup
 
-        player.setPlayerListName(ChatColor.of(teamDetails.color) +"["+teamDetails+"] "+ ChatColor.of(teamDetails.lightColor) + player.getName());
+        player.setPlayerListName(ChatColor.of(teamStyling.color) +"["+ teamStyling +"] "+ ChatColor.of(teamStyling.lightColor) + player.getName());
         Bukkit.getPluginManager().registerEvents(this, Iter.plugin);
         setPosition(spawnPosition);
 
@@ -395,15 +399,15 @@ public final class GamePlayer implements Listener {
     }
 
     public List<Point> getStepPlanning() {
-        return itemWalk.getStepPlanning();
+        return Collections.unmodifiableList(nextStep);
     }
 
     public int getTeamIndex() {
         return game.getTeamIndex(player);
     }
 
-    public TeamDetails getTeamDetails() {
-        return teamDetails;
+    public TeamStyling getTeamDetails() {
+        return teamStyling;
     }
 
     public FakePlayer getFakePlayer() {

@@ -1,7 +1,7 @@
 package me.antidotaleks.iter.elements.items;
 
 import me.antidotaleks.iter.Iter;
-import me.antidotaleks.iter.elements.GameItem;
+import me.antidotaleks.iter.utils.items.GameItem;
 import me.antidotaleks.iter.elements.GamePlayer;
 import org.bukkit.Location;
 import org.bukkit.Particle;

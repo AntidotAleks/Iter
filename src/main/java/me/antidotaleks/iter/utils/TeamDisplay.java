@@ -9,7 +9,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Arrays;
 
-public class TeamDisplay {
+public final class TeamDisplay {
 
     private final Game game;
     private final Audience[] teamAudiences;

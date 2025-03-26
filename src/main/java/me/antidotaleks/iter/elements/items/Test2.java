@@ -1,7 +1,7 @@
 package me.antidotaleks.iter.elements.items;
 
-import me.antidotaleks.iter.elements.Conditional;
-import me.antidotaleks.iter.elements.Cooldown;
+import me.antidotaleks.iter.utils.items.Conditional;
+import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.elements.GamePlayer;
 
 public class Test2 extends ItemWalk implements Cooldown, Conditional {

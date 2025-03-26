@@ -1,4 +1,4 @@
-package me.antidotaleks.iter.elements;
+package me.antidotaleks.iter.utils;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolManager;
@@ -6,6 +6,7 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.*;
 import com.google.common.collect.Multimap;
 import me.antidotaleks.iter.Iter;
+import me.antidotaleks.iter.elements.GamePlayer;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -13,7 +14,7 @@ import org.bukkit.entity.Player;
 
 import java.util.*;
 
-public class FakePlayer {
+public final class FakePlayer {
     private final GamePlayer playerBase;
     private final List<Player> allPlayersInGame;
     private Location location;

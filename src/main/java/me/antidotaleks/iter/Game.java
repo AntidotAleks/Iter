@@ -3,7 +3,7 @@ package me.antidotaleks.iter;
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.maps.Map;
-import me.antidotaleks.iter.utils.TeamDetails;
+import me.antidotaleks.iter.utils.TeamStyling;
 import me.antidotaleks.iter.utils.TeamDisplay;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -25,7 +25,7 @@ public class Game implements Listener {
     // Teams
     private final GamePlayer[][] teams;
     private final Player[][] teamsBukkit;
-    private final TeamDetails[] teamDetails;
+    private final TeamStyling[] teamDetails;
     // Turns
     private int currentTeamPlayIndex = 0;
     private final int[] teamPlayOrder;
@@ -40,7 +40,7 @@ public class Game implements Listener {
         this.map = map;
         this.mapLocation = map.buildMap();
         this.teamPlayOrder = map.teamPlayOrder();
-        this.teamDetails = TeamDetails.getColors(playersInTeams.length);
+        this.teamDetails = TeamStyling.getColors(playersInTeams.length);
 
         // shuffle teams by teamPlayOrder
 
@@ -262,11 +262,11 @@ public class Game implements Listener {
         return teamsBukkit;
     }
 
-    public TeamDetails[] getTeamDetails() {
+    public TeamStyling[] getTeamDetails() {
         return teamDetails;
     }
 
-    public TeamDetails getTeamDetails(Player player) {
+    public TeamStyling getTeamDetails(Player player) {
         return teamDetails[getTeamIndex(player)];
     }
 
