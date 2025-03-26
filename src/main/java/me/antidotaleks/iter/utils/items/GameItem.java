@@ -26,7 +26,7 @@ public abstract class GameItem implements GameItemInterface {
     }
 
     protected Point getCurrentPosition() {
-        List<Point> stepPlanning = player.itemWalk.getStepPlanning();
+        List<Point> stepPlanning = player.getStepPlanning();
         if (stepPlanning.isEmpty())
             return player.getPosition();
 
