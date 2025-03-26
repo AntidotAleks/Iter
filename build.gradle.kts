@@ -44,6 +44,7 @@ dependencies {
     implementation("net.megavex:scoreboard-library-extra-kotlin:$scoreboardLibraryVersion")
     runtimeOnly("net.megavex:scoreboard-library-modern:$scoreboardLibraryVersion")
     implementation("net.kyori:adventure-api:4.19.0")
+    implementation("net.kyori:adventure-platform-bukkit:4.3.4")
 
 }
 

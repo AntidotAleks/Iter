@@ -62,6 +62,7 @@ public class SetupManager {
 
         // Read maps data files
         File[] mapFiles = mapsFolder.listFiles((dir, name) -> name.endsWith(".yaml"));
+        assert mapFiles != null;
         for (File mapFile : mapFiles) {
             String mapName = mapFile.getName().replace(".yaml", "");
             try {
@@ -76,15 +77,36 @@ public class SetupManager {
         }
     }
 
+    // Languages
+
+    public static File langsFolder;
+    public static void loadLanguages() {
+        Iter.pluginFolder.mkdirs();
+        String path = Iter.pluginFolder.getPath();
+        char separator = File.separatorChar;
+
+
+        // Open langs folder
+        mapsFolder = new File(path+separator+"langs"); // Open maps folder
+        mapsFolder.mkdirs();
+
+        File[] mapFiles = mapsFolder.listFiles((dir, name) -> name.endsWith(".yaml"));
+        assert mapFiles != null;
+        for (File langFile : mapFiles) {
+
+            String mapName = langFile.getName().replace(".yaml", "");
+        }
+    }
+
     // Teams
 
     public static Team hideNameTeam;
     public static void setupMinecraftTeams() {
-        Scoreboard sb = Bukkit.getScoreboardManager().getMainScoreboard();
+        Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
 
-        hideNameTeam = sb.getTeam("hide_name");
+        hideNameTeam = scoreboard.getTeam("hide_name");
         if (hideNameTeam == null)
-            hideNameTeam = sb.registerNewTeam("hide_name");
+            hideNameTeam = scoreboard.registerNewTeam("hide_name");
 
         hideNameTeam.setOption(Team.Option.NAME_TAG_VISIBILITY, Team.OptionStatus.NEVER);
         hideNameTeam.setOption(Team.Option.COLLISION_RULE, Team.OptionStatus.NEVER);
