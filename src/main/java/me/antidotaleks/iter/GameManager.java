@@ -4,7 +4,6 @@ import me.antidotaleks.iter.events.PlayerCancelQueueEvent;
 import me.antidotaleks.iter.events.PlayerQueueEvent;
 import me.antidotaleks.iter.maps.Map;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
@@ -31,8 +30,6 @@ public final class GameManager implements Listener {
     }
 
     public static void startGame(Map map, Player[][] players) {
-        Location loc = map.buildMap(); // Build a map and get its location
-
         Game thisGame = new Game(players, map); // Create new game instance
         Bukkit.getPluginManager().registerEvents(thisGame, Iter.plugin);
         new BukkitRunnable() { @Override public void run() {
