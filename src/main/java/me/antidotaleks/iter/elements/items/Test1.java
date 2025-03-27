@@ -1,9 +1,11 @@
 package me.antidotaleks.iter.elements.items;
 
-import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.elements.GamePlayer;
+import me.antidotaleks.iter.utils.items.specific.CooldownGameItem;
 
-public class Test1 extends ItemWalk implements Cooldown {
+import java.awt.*;
+
+public class Test1 extends CooldownGameItem {
     /**
      * Item that allows the player to walk
      * @param player the player that owns the item
@@ -18,6 +20,21 @@ public class Test1 extends ItemWalk implements Cooldown {
     }
 
     @Override
+    public int getCooldown() {
+        return 12;
+    }
+
+    @Override
+    public boolean usable(Point coords) {
+        return false;
+    }
+
+    @Override
+    public void use(Point coords) {
+
+    }
+
+    @Override
     public String getName() {
         return "Test1";
     }
@@ -25,10 +42,5 @@ public class Test1 extends ItemWalk implements Cooldown {
     @Override
     public char getCardSymbol() {
         return '\uE004';
-    }
-
-    @Override
-    public int getCooldown() {
-        return 12;
     }
 }

@@ -2,6 +2,7 @@ package me.antidotaleks.iter.utils.items;
 
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.maps.Map;
+import me.antidotaleks.iter.utils.items.specific.GameItemInterface;
 
 import java.awt.Point;
 import java.util.Arrays;

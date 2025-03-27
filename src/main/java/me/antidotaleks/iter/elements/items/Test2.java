@@ -1,10 +1,12 @@
 package me.antidotaleks.iter.elements.items;
 
-import me.antidotaleks.iter.utils.items.Conditional;
-import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.elements.GamePlayer;
+import me.antidotaleks.iter.utils.items.Conditional;
+import me.antidotaleks.iter.utils.items.specific.CooldownGameItem;
 
-public class Test2 extends ItemWalk implements Cooldown, Conditional {
+import java.awt.*;
+
+public class Test2 extends CooldownGameItem implements Conditional {
     /**
      * Item that allows the player to walk
      * @param player the player that owns the item
@@ -19,6 +21,21 @@ public class Test2 extends ItemWalk implements Cooldown, Conditional {
     }
 
     @Override
+    public int getCooldown() {
+        return 2;
+    }
+
+    @Override
+    public boolean usable(Point coords) {
+        return false;
+    }
+
+    @Override
+    public void use(Point coords) {
+
+    }
+
+    @Override
     public String getName() {
         return "Test2";
     }
@@ -26,10 +43,5 @@ public class Test2 extends ItemWalk implements Cooldown, Conditional {
     @Override
     public char getCardSymbol() {
         return '\uE005';
-    }
-
-    @Override
-    public int getCooldown() {
-        return 2;
     }
 }

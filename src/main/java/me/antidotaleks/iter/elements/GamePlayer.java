@@ -7,6 +7,7 @@ import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.utils.FakePlayer;
 import me.antidotaleks.iter.utils.InfoDisplay;
 import me.antidotaleks.iter.utils.TeamStyling;
+import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.utils.items.GameItem;
 import me.antidotaleks.iter.utils.items.PreUsed;
 import net.md_5.bungee.api.ChatColor;
@@ -210,6 +211,8 @@ public final class GamePlayer implements Listener {
 
         if (item instanceof PreUsed)
             ((PreUsed) item).preUse(tilePos);
+        if (item instanceof Cooldown)
+            ((Cooldown) item).cooldown();
 
 
         Iter.logger.info("Interact at tile: [" + tilePos.x + ", " + tilePos.y+"]");

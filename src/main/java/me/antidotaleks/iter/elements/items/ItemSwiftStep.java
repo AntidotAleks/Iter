@@ -1,9 +1,9 @@
 package me.antidotaleks.iter.elements.items;
 
 import me.antidotaleks.iter.elements.GamePlayer;
-import me.antidotaleks.iter.utils.items.Cooldown;
+import me.antidotaleks.iter.utils.items.specific.MovementCooldownGameItem;
 
-public class ItemSwiftStep extends ItemWalk implements Cooldown {
+public class ItemSwiftStep extends MovementCooldownGameItem {
     /**
      * Item that allows the player to walk
      * @param player the player that owns the item

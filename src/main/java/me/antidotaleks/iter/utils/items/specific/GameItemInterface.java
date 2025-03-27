@@ -1,6 +1,7 @@
-package me.antidotaleks.iter.utils.items;
+package me.antidotaleks.iter.utils.items.specific;
 
 import me.antidotaleks.iter.elements.GamePlayer;
+import me.antidotaleks.iter.utils.items.GameItem;
 
 import java.awt.*;
 
