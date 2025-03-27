@@ -13,7 +13,6 @@ import me.antidotaleks.iter.utils.items.PreUsed;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.block.data.BlockData;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -204,18 +203,20 @@ public final class GamePlayer implements Listener {
 
         if (!item.usable(tilePos))
             return;
-        if(!useEnergy(item.getEnergyUsage()))
+        if (!useEnergy(item.getEnergyUsage()))
+            return;
+        if (item instanceof Cooldown itemCooldown && itemCooldown.getCooldown() > 0)
             return;
 
         itemsUsed.add(Map.entry(item, tilePos));
 
-        if (item instanceof PreUsed)
-            ((PreUsed) item).preUse(tilePos);
-        if (item instanceof Cooldown)
-            ((Cooldown) item).cooldown();
+        if (item instanceof PreUsed itemPreUsed)
+            itemPreUsed.preUse(tilePos);
+        if (item instanceof Cooldown itemCooldown)
+            itemCooldown.cooldown();
 
-
-        Iter.logger.info("Interact at tile: [" + tilePos.x + ", " + tilePos.y+"]");
+        infoDisplay.updateCards();
+        Iter.logger.info(player.getName()+" used at tile: [" + tilePos.x + ", " + tilePos.y+"]");
     }
 
     private void undoLast() {
@@ -226,39 +227,16 @@ public final class GamePlayer implements Listener {
 
         this.restoreEnergy(lastItem.getEnergyUsage());
 
-        if (lastItem instanceof PreUsed)
-            ((PreUsed) lastItem).undoPreUse();
+        if (lastItem instanceof PreUsed itemPreUsed)
+            itemPreUsed.undoPreUse();
+        if (lastItem instanceof Cooldown itemCooldown)
+            itemCooldown.undoCooldown();
 
+        infoDisplay.updateCards();
         itemsUsed.removeLast();
+        Iter.logger.info(player.getName()+" undo use");
     }
 
-    private void fillTileAround(boolean blocked) {
-        Location tilePos = getWorldPosition();
-
-        BlockData from = blocked ? Iter.AIR_DATA : Iter.BARRIER_DATA,
-                    to = blocked ? Iter.BARRIER_DATA : Iter.AIR_DATA;
-
-        tilePos.add(-2, 1, -1);
-
-        for (int i = 0; i < 3; i++) {
-            replaceFromTo(tilePos, from, to);
-            tilePos.add(4, 0, 0);
-            replaceFromTo(tilePos, from, to);
-            tilePos.add(-4, 0, 1);
-        }
-        for (int i = 0; i < 3; i++) {
-            tilePos.add(1, 0, -4);
-            replaceFromTo(tilePos, from, to);
-            tilePos.add(0, 0, 4);
-            replaceFromTo(tilePos, from, to);
-        }
-
-    }
-
-    private void replaceFromTo(Location loc, BlockData from, BlockData to) {
-        if(loc.getBlock().getBlockData().equals(from))
-            player.sendBlockChange(loc, to);
-    }
 
     public void teleport(Location loc) {
         List<Entity> passengers = player.getPassengers();
