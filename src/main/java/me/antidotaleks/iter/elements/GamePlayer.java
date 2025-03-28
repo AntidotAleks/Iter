@@ -207,9 +207,10 @@ public final class GamePlayer implements Listener {
 
         GameItem item = itemsUsed.getFirst().getKey();
         item.use(itemsUsed.getFirst().getValue());
+        Iter.logger.info("Used item \"" + item.getName()+"\" at tile [" + itemsUsed.getFirst().getValue().x + ", " + itemsUsed.getFirst().getValue().y+"] by " + player.getName());
+
         itemsUsed.removeFirst();
 
-        Iter.logger.info("Used item: " + item.getClass().getName()+", now updating info");
         return true;
     }
 
@@ -241,7 +242,7 @@ public final class GamePlayer implements Listener {
         updateItemBlocks();
 
         infoDisplay.changeSelectedCard();
-        Iter.logger.info(player.getName()+" used at tile: [" + tilePos.x + ", " + tilePos.y+"]");
+        // Iter.logger.info(player.getName()+" used at tile: [" + tilePos.x + ", " + tilePos.y+"]");
     }
 
     private void undoLast() {
@@ -259,7 +260,7 @@ public final class GamePlayer implements Listener {
 
         itemsUsed.removeLast();
         updateItemBlocks();
-        Iter.logger.info(player.getName()+" undo use");
+        // Iter.logger.info(player.getName()+" undo use");
     }
 
     private void updateItemBlocks() {
@@ -276,7 +277,6 @@ public final class GamePlayer implements Listener {
                 )
         );
 
-        Iter.logger.info(Arrays.toString(items.stream().map(Pair::getSecond).toArray()));
         infoDisplay.changeSelectedCard();
     }
 
