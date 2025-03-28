@@ -152,7 +152,7 @@ public final class GamePlayer implements Listener {
         else
             slotSelected = (slotSelected - 1 + items.size()) % items.size();
 
-        infoDisplay.updateCards();
+        infoDisplay.changeSelectedCard();
     }
 
     // Turns
@@ -174,7 +174,7 @@ public final class GamePlayer implements Listener {
     // Utils
 
     public void updateInfo() {
-        infoDisplay.updateData();
+        infoDisplay.updateInfoDisplays();
     }
 
     public void stop() {
@@ -215,7 +215,7 @@ public final class GamePlayer implements Listener {
         if (item instanceof Cooldown itemCooldown)
             itemCooldown.cooldown();
 
-        infoDisplay.updateCards();
+        infoDisplay.changeSelectedCard();
         Iter.logger.info(player.getName()+" used at tile: [" + tilePos.x + ", " + tilePos.y+"]");
     }
 
@@ -232,7 +232,7 @@ public final class GamePlayer implements Listener {
         if (lastItem instanceof Cooldown itemCooldown)
             itemCooldown.undoCooldown();
 
-        infoDisplay.updateCards();
+        infoDisplay.changeSelectedCard();
         itemsUsed.removeLast();
         Iter.logger.info(player.getName()+" undo use");
     }

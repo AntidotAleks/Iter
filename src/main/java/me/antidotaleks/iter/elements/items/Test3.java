@@ -26,4 +26,9 @@ public class Test3 extends ItemWalk implements Conditional {
     public char getCardSymbol() {
         return '\uE006';
     }
+
+    @Override
+    public boolean isBlocked() {
+        return true;
+    }
 }

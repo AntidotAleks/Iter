@@ -44,4 +44,9 @@ public class Test2 extends CooldownGameItem implements Conditional {
     public char getCardSymbol() {
         return '\uE005';
     }
+
+    @Override
+    public boolean isBlocked() {
+        return true;
+    }
 }

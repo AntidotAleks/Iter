@@ -2,14 +2,13 @@ package me.antidotaleks.iter.utils;
 
 import com.google.common.collect.Lists;
 import me.antidotaleks.iter.Iter;
-import me.antidotaleks.iter.elements.*;
+import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.utils.items.GameItem;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.ComponentLike;
 import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.format.TextColor;
@@ -61,18 +60,24 @@ public final class InfoDisplay {
         this.teamStyling = gamePlayer.getTeamDetails();
 
         // Create displays
-        infoDisplay = newNicknameInfo(true);
-        fakePlayerInfoDisplay = newNicknameInfo(false);
+        infoDisplay = newAbovePlayerInfoDisplay(true);
+        fakePlayerInfoDisplay = newAbovePlayerInfoDisplay(false);
 
         cursor = newCursor();
-        newCursorUpdater();
         updateInventory();
-        updateCards();
+        changeSelectedCard();
 
-        updateData();
+        updateInfoDisplays();
     }
 
-    private TextDisplay newNicknameInfo(boolean isForRealPlayer) {
+    public void nextTurn() {
+        updateBlockedList();
+        updateInfoDisplays();
+    }
+
+    // Display creation
+
+    private TextDisplay newAbovePlayerInfoDisplay(boolean isForRealPlayer) {
         TextDisplay infoDisplay = Iter.overworld.spawn(gamePlayer.getGame().getMapLocation(), TextDisplay.class);
 
         infoDisplay.setAlignment(TextDisplay.TextAlignment.CENTER);
@@ -114,33 +119,9 @@ public final class InfoDisplay {
         return cursor;
     }
 
-    private void newCursorUpdater() {
-
-        cursorUpdater = new BukkitRunnable() {
-                    Location lastLocation = player.getLocation();
-                    @Override
-                    public void run() {
-                        Location newLocation = player.getLocation();
-                        if (newLocation.equals(lastLocation))
-                            return;
-
-                        lastLocation = newLocation;
-
-                        Location lookAt = gamePlayer.getLookTileWorldPosition();
-                        if (lookAt != null) {
-                            cursor.teleport(lookAt);
-                            return;
-                        }
-                        Location underMap = cursor.getLocation();
-                        underMap.setY(0);
-                        cursor.teleport(underMap);
-                    }
-                };
-    }
-
     // Display
 
-    public void updateData() {
+    public void updateInfoDisplays() {
         int health = gamePlayer.getHealth();
         int maxHealth = gamePlayer.getMaxHealth();
         int energy = gamePlayer.getEnergy();
@@ -155,13 +136,16 @@ public final class InfoDisplay {
         fakePlayerInfoDisplay.setText(infoString);
     }
 
+    // Card UI
+
     Sidebar sidebar = null;
-    private ComponentLike cardListToShow = null;
+    private Component cardListToShow = null;
     BukkitRunnable cardUpdater = null;
 
-    public void updateCards() {
+    public void changeSelectedCard() {
         int index = gamePlayer.getCurrentItemIndex();
         cardListToShow = cards.get(index).getKey();
+        cardListToShow = addCardBlocks(cardListToShow, index);
         audience.sendActionBar(cardListToShow);
 
         if (sidebar == null) {
@@ -175,12 +159,34 @@ public final class InfoDisplay {
             cardUpdater.runTaskTimer(Iter.plugin, 0, 15);
         }
 
-        ComponentLike[] sidebarCard = cards.get(index).getValue();
+        Component[] sidebarCard = cards.get(index).getValue();
         for (int i = 0; i < sidebarCard.length; i++)
             sidebar.line(i, sidebarCard[i]);
     }
 
-    ArrayList<Map.Entry<ComponentLike, ComponentLike[]>> cards = new ArrayList<>();
+    private static final String CARD_BLOCK = "\uEFFD"; // TODO: set the correct value
+    private Component addCardBlocks(Component cardList, int index) {
+        List<GameItem> items = gamePlayer.getItems();
+        int itemAmount = items.size();
+        boolean[] blocked = new boolean[itemAmount];
+
+        for (int i = 0; i < items.size(); i++) {
+            if (items.get(i) instanceof Conditional conditional)
+                blocked[i] = conditional.isBlocked();
+        }
+
+        cardList = cardList.append(offset( -itemAmount*65 ));
+        for (boolean block : blocked)
+            cardList = cardList.append(block?translatable(CARD_BLOCK, "cards"):offset(65));
+
+        return cardList;
+    }
+
+    public boolean[] getBlockedList() {
+        return new boolean[gamePlayer.getItems().size()];
+    }
+
+    ArrayList<Map.Entry<Component, Component[]>> cards = new ArrayList<>();
     public void updateInventory() {
         for (int i = 0; i < gamePlayer.getItems().size(); i++) {
             GameItem item = gamePlayer.getItems().get(i);
@@ -191,6 +197,26 @@ public final class InfoDisplay {
 
     public void showCursor() {
         player.showEntity(Iter.plugin, cursor);
+        cursorUpdater = new BukkitRunnable() {
+            Location lastLocation = player.getLocation();
+            @Override
+            public void run() {
+                Location newLocation = player.getLocation();
+                if (newLocation.equals(lastLocation))
+                    return;
+
+                lastLocation = newLocation;
+
+                Location lookAt = gamePlayer.getLookTileWorldPosition();
+                if (lookAt != null) {
+                    cursor.teleport(lookAt);
+                    return;
+                }
+                Location underMap = cursor.getLocation();
+                underMap.setY(0);
+                cursor.teleport(underMap);
+            }
+        };
         cursorUpdater.runTaskTimerAsynchronously(Iter.plugin, 0, 1);
     }
 
@@ -199,10 +225,8 @@ public final class InfoDisplay {
         try {
             cursorUpdater.cancel();
         } catch (Exception ignored) {}
-        newCursorUpdater();
+        ;
     }
-
-    // UI
 
     public Component cardList(int activeIndex) {
         final int[] i = {0};
@@ -243,7 +267,6 @@ public final class InfoDisplay {
     private static final String[]
             CARD_OFFSET_FONT = new String[]{"cards", "cards_low"},
             TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3"};
-
     private Component actionbarCard(GameItem item, boolean raised) {
         String[] title = cardTitle(item.getName());
         int offset = raised?0:1;
@@ -270,7 +293,6 @@ public final class InfoDisplay {
 
     private static final String[] SIDEBAR_CARD_OFFSETS = new String[]{"\uDB00\uDC30", "\uDAFF\uDF89"};
     private static final String CARD_BACKSIDE = "\uEFFF";
-
     private static Component[] sidebarCard(GameItem item) {
         Component[] card = new Component[10];
 
@@ -290,7 +312,6 @@ public final class InfoDisplay {
             CHAR_WIDTH = 8,
             DIGIT_WIDTH = 5,
             SPACE_WIDTH = 15;
-
     private static Component cardInfoBase(GameItem item, boolean raised) {
         int offset = raised?0:1;
         Component card = translatable(item.getCardSymbol()+"", CARD_OFFSET_FONT[offset])
