@@ -21,7 +21,7 @@ public class Test1 extends CooldownGameItem {
     }
 
     @Override
-    public int getCooldown() {
+    public int getMaxCooldown() {
         return 12;
     }
 

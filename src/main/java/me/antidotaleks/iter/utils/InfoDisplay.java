@@ -1,5 +1,6 @@
 package me.antidotaleks.iter.utils;
 
+import com.comphenix.protocol.wrappers.Pair;
 import com.google.common.collect.Lists;
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.GamePlayer;
@@ -64,8 +65,6 @@ public final class InfoDisplay {
         fakePlayerInfoDisplay = newAbovePlayerInfoDisplay(false);
 
         cursor = newCursor();
-        updateInventory();
-        changeSelectedCard();
 
         updateInfoDisplays();
     }
@@ -143,6 +142,8 @@ public final class InfoDisplay {
 
     public void changeSelectedCard() {
         int index = gamePlayer.getCurrentItemIndex();
+        if (cards.isEmpty())
+            updateInventory();
         cardListToShow = cards.get(index).getKey();
         cardListToShow = addCardBlocks(cardListToShow, index);
         audience.sendActionBar(cardListToShow);
@@ -163,35 +164,45 @@ public final class InfoDisplay {
             sidebar.line(i, sidebarCard[i]);
     }
 
-    private static final String CARD_BLOCK = "\uEFFD"; // TODO: set the correct value
+    private static final String CARD_BLOCK = "\uEFFE";
     private Component addCardBlocks(Component cardList, int index) {
-        List<GameItem> items = gamePlayer.getItems();
-        int itemAmount = items.size();
-        boolean[] blocked = new boolean[itemAmount];
+        List<Pair<GameItem, Boolean>> itemBlockedPairList = gamePlayer.getItems();
+        int itemAmount = itemBlockedPairList.size();
 
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i) instanceof Conditional conditional)
-                blocked[i] = conditional.isBlocked();
+
+        cardList = cardList.append(offset( -itemAmount*63 ));
+        for (int i = 0; i < itemBlockedPairList.size(); i++) {
+            Pair<GameItem, Boolean> pair = itemBlockedPairList.get(i);
+
+            if (!pair.getSecond()) {
+                cardList = cardList.append(offset( 63 ));
+                continue;
+            }
+
+            cardList = cardList.append(translatable(CARD_BLOCK, CARD_OFFSET_FONT[index == i ? 0 : 1]));
+
+            GameItem item = pair.getFirst();
+            if (!(item instanceof Cooldown itemCooldown) || itemCooldown.getCooldown() == 0)
+                continue;
+
+            int cooldown = itemCooldown.getCooldown();
+            cardList = cardList
+                    .append(offset(-31 - (cooldown+"").length()*3))
+                    .append(translatable(cooldown+"", TEXT_OFFSET_FONT[4 + (index == i ? 0 : 1)]))
+                    .append(offset( 31 - (cooldown+"").length()*3));
         }
 
-        cardList = cardList.append(offset( -itemAmount*65 ));
-        for (boolean block : blocked)
-            cardList = cardList.append(block?translatable(CARD_BLOCK, "cards"):offset(65));
-
         return cardList;
-    }
-
-    public boolean[] getBlockedList() {
-        return new boolean[gamePlayer.getItems().size()];
     }
 
     ArrayList<Map.Entry<Component, Component[]>> cards = new ArrayList<>();
     public void updateInventory() {
         for (int i = 0; i < gamePlayer.getItems().size(); i++) {
-            GameItem item = gamePlayer.getItems().get(i);
+            GameItem item = gamePlayer.getItems().get(i).getFirst();
 
             cards.add(Map.entry(cardList(i), sidebarCard(item)));
         }
+        changeSelectedCard();
     }
 
     public void showCursor() {
@@ -230,7 +241,7 @@ public final class InfoDisplay {
     public Component cardList(int activeIndex) {
         final int[] i = {0};
         return gamePlayer.getItems().stream()
-                .map(item -> actionbarCard(item, i[0]++ == activeIndex)).reduce(Component.empty(), Component::append).compact();
+                .map(pair -> actionbarCard(pair.getFirst(), i[0]++ == activeIndex)).reduce(Component.empty(), Component::append).compact();
     }
 
     // Utils
@@ -265,7 +276,7 @@ public final class InfoDisplay {
 
     private static final String[]
             CARD_OFFSET_FONT = new String[]{"cards", "cards_low"},
-            TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3"};
+            TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3", "mono_low4", "mono_low5"};
     private Component actionbarCard(GameItem item, boolean raised) {
         String[] title = cardTitle(item.getName());
         int offset = raised?0:1;
@@ -296,7 +307,7 @@ public final class InfoDisplay {
         Component[] card = new Component[10];
 
         card[0] = Component.text(SIDEBAR_CARD_OFFSETS[0])
-                .append(cardInfoBase(item, true))
+                .append(cardInfoBase(item, false))
                 .append(Component.text(SIDEBAR_CARD_OFFSETS[1]))
                 .append(translatable(CARD_BACKSIDE, "cards"));
         card[1] = Component.empty();
@@ -323,8 +334,8 @@ public final class InfoDisplay {
         if (item instanceof Cooldown itemCooldown)
             card = card
                     .append(translatable("\uEFF0", CARD_OFFSET_FONT[offset]))
-                    .append(Component.text(itemCooldown.getCooldown(), digitsStyle))
-                    .append(offset((SPACE_WIDTH-2 - String.valueOf(itemCooldown.getCooldown()).length() * DIGIT_WIDTH))); // why tf is this -2? Why not -1? Why it works?
+                    .append(Component.text(itemCooldown.getMaxCooldown(), digitsStyle))
+                    .append(offset((SPACE_WIDTH-2 - String.valueOf(itemCooldown.getMaxCooldown()).length() * DIGIT_WIDTH))); // why tf is this -2? Why not -1? Why it works?
         else
             card = card.append(offset(CHAR_WIDTH-1 + SPACE_WIDTH));
 
@@ -348,8 +359,6 @@ public final class InfoDisplay {
         else
             card = card.append(offset(CHAR_WIDTH + SPACE_WIDTH + 4));
 
-
-        Iter.logger.info(card.compact().insertion());
         return card;
     }
 

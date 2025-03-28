@@ -1,5 +1,6 @@
 package me.antidotaleks.iter.elements;
 
+import com.comphenix.protocol.wrappers.Pair;
 import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.items.*;
@@ -25,12 +26,11 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.RayTraceResult;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public final class GamePlayer implements Listener {
 
@@ -45,12 +45,10 @@ public final class GamePlayer implements Listener {
 
     // Items
 
-    private final ArrayList<GameItem> items = new ArrayList<>();
+    private final ArrayList<Pair<@NotNull GameItem, @NotNull Boolean>> items = new ArrayList<>(); // Pair is modifiable
     private int slotSelected = 0;
-    private final ArrayList<Map.Entry<GameItem, Point>> itemsUsed = new ArrayList<>();
+    private final ArrayList<Map.Entry<@NotNull GameItem, @NotNull Point>> itemsUsed = new ArrayList<>(); // Map.Entry is not modifiable
     public final ArrayList<Point> nextStep = new ArrayList<>();
-    // Necessary items
-    public final ItemWalk itemWalk;
 
     // Stats
 
@@ -71,12 +69,11 @@ public final class GamePlayer implements Listener {
         this.game = game;
         modifiers(modifiers, disbalanceModifier);
 
-        itemWalk = new ItemWalk(this);
-        manageItems();
-
         teamStyling = game.getTeamDetails(player);
         fakePlayer = new FakePlayer(this);
         infoDisplay = new InfoDisplay(this);
+
+        giveStartItems();
 
         // Setup
 
@@ -87,13 +84,16 @@ public final class GamePlayer implements Listener {
         // Items
     }
 
-    private void manageItems() {
-        items.add(itemWalk);
-        items.add(new ItemSwiftStep(this));
-        items.add(new ItemBasePunch(this));
-        items.add(new Test1(this));
-        items.add(new TestItemWalkBlocker(this));
-        items.add(new Test3(this));
+    private void giveStartItems() {
+        addItemInner(new ItemWalk(this));
+        addItemInner(new ItemSwiftStep(this));
+        addItemInner(new ItemBasePunch(this));
+        addItemInner(new Test1(this));
+        addItemInner(new TestItemWalkBlocker(this));
+        addItemInner(new Test3(this));
+
+        updateItemBlocks();
+        infoDisplay.updateInventory();
     }
 
 
@@ -163,6 +163,8 @@ public final class GamePlayer implements Listener {
     public void roundStart() {
         canPlay = true;
         infoDisplay.showCursor();
+        updateItemBlocks();
+        infoDisplay.changeSelectedCard();
     }
 
     public void finishTurn() {
@@ -176,7 +178,16 @@ public final class GamePlayer implements Listener {
         itemsUsed.clear();
         nextStep.clear();
         // Just in case
+        for (Pair<GameItem, Boolean> pair : items) {
+            if (pair.getFirst() instanceof Cooldown itemCooldown) {
+                itemCooldown.decrementCooldown();
+                if (itemCooldown.getCooldown() == 0)
+                    pair.setSecond(false);
+            }
+        }
 
+        updateItemBlocks();
+        infoDisplay.changeSelectedCard();
     }
 
     // Utils
@@ -207,15 +218,16 @@ public final class GamePlayer implements Listener {
         if (tilePos == null)
             return;
 
-        GameItem item = items.get(slotSelected);
+        Pair<GameItem, Boolean> itemBlockPair = items.get(slotSelected);
+        GameItem item = itemBlockPair.getFirst();
 
-        if (!item.usable(tilePos))
+        if (itemBlockPair.getSecond()) // if blocked
             return;
-        if (!useEnergy(item.getEnergyUsage()))
+        if (!item.usable(tilePos)) // if not usable on this tile
             return;
-        if (item instanceof Cooldown itemCooldown && itemCooldown.getCooldown() > 0)
+        if (!useEnergy(item.getEnergyUsage())) // if not enough energy
             return;
-        if (item instanceof Conditional itemConditional && itemConditional.isBlocked())
+        if (item instanceof Cooldown itemCooldown && itemCooldown.getCooldown() > 0) // if on cooldown
             return;
 
 
@@ -224,9 +236,9 @@ public final class GamePlayer implements Listener {
         if (item instanceof PreUsed itemPreUsed)
             itemPreUsed.preUse(tilePos);
         if (item instanceof Cooldown itemCooldown)
-            itemCooldown.cooldown();
-        if (item instanceof Conditional)
-            updateItemBlocks();
+            itemCooldown.putOnCooldown();
+
+        updateItemBlocks();
 
         infoDisplay.changeSelectedCard();
         Iter.logger.info(player.getName()+" used at tile: [" + tilePos.x + ", " + tilePos.y+"]");
@@ -243,15 +255,29 @@ public final class GamePlayer implements Listener {
         if (lastItem instanceof PreUsed itemPreUsed)
             itemPreUsed.undoPreUse();
         if (lastItem instanceof Cooldown itemCooldown)
-            itemCooldown.undoCooldown();
+            itemCooldown.removeCooldown();
 
-        infoDisplay.changeSelectedCard();
         itemsUsed.removeLast();
+        updateItemBlocks();
         Iter.logger.info(player.getName()+" undo use");
     }
 
     private void updateItemBlocks() {
-        // itemsUsed.forEach(x -> x.getKey().updateIsBlocked());
+        items.forEach(itemPairToCheck ->
+                itemPairToCheck.setSecond(
+                        (itemPairToCheck.getFirst() instanceof Cooldown itemCd && itemCd.getCooldown() > 0)
+                                ||
+                        itemPairToCheck.getFirst() instanceof Conditional conditional && conditional.isBlocked()
+                                ||
+                        itemsUsed.stream()
+                        .map(Map.Entry::getKey)
+                        .anyMatch(item -> item instanceof Conditional conditional &&
+                                conditional.isBlocking(itemPairToCheck.getFirst()))
+                )
+        );
+
+        Iter.logger.info(Arrays.toString(items.stream().map(Pair::getSecond).toArray()));
+        infoDisplay.changeSelectedCard();
     }
 
     public void teleport(Location loc) {
@@ -262,7 +288,17 @@ public final class GamePlayer implements Listener {
         passengers.forEach(player::addPassenger);
     }
 
+    private void addItemInner(GameItem item) {
+        items.add(new Pair<>(item, false));
+    }
+
     // Getters/Setters
+
+    public void addItem(GameItem item) {
+        addItemInner(item);
+        updateItemBlocks();
+        infoDisplay.updateInventory();
+    }
 
     public Point getPosition() {
         return pos;
@@ -379,16 +415,12 @@ public final class GamePlayer implements Listener {
         return game.getTeam(player);
     }
 
-    public List<GameItem> getItems() {
+    public List<Pair<GameItem, Boolean>> getItems() {
         return List.copyOf(items);
     }
 
     public int getCurrentItemIndex() {
         return slotSelected;
-    }
-
-    public GameItem getCurrentItem() {
-        return items.get(slotSelected);
     }
 
     public List<Map.Entry<GameItem, Point>> getItemsUsed() {

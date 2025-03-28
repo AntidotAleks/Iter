@@ -33,14 +33,14 @@ public final class GameManager implements Listener {
         Game thisGame = new Game(players, map); // Create new game instance
         Bukkit.getPluginManager().registerEvents(thisGame, Iter.plugin);
         new BukkitRunnable() { @Override public void run() {
-            thisGame.start();
+            thisGame.startGame();
         }}.runTaskLater(Iter.plugin, 20);
 
         games.add(thisGame);
     }
 
     public static void stopGame(Game game) {
-        game.stop();
+        game.stopGame();
         HandlerList.unregisterAll(game);
 
         games.remove(game);

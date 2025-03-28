@@ -18,7 +18,7 @@ public class ItemSwiftStep extends MovementCooldownGameItem {
     }
 
     @Override
-    public int getCooldown() {
+    public int getMaxCooldown() {
         return 2;
     }
 

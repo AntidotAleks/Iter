@@ -5,7 +5,6 @@ import me.antidotaleks.iter.utils.items.Cooldown;
 import org.jetbrains.annotations.ApiStatus;
 
 public abstract class MovementCooldownGameItem extends MovementGameItem implements Cooldown {
-    private int cooldown;
 
     /**
      * Create a new game item
@@ -14,32 +13,44 @@ public abstract class MovementCooldownGameItem extends MovementGameItem implemen
      */
     public MovementCooldownGameItem(GamePlayer player) {
         super(player);
+        putOnCooldown();
     }
 
+    private int cooldown;
+
     /**
-     * Do not override this method, only {@link #getCooldown()}
+     * Do not override this method, only {@link #getMaxCooldown()}
      */
     @ApiStatus.Internal
     @Override
-    public void cooldown() {
-        cooldown = getCooldown();
+    public int getCooldown() {
+        return cooldown;
     }
 
     /**
-     * Do not override this method, only {@link #getCooldown()}
+     * Do not override this method, only {@link #getMaxCooldown()}
      */
     @ApiStatus.Internal
     @Override
-    public void undoCooldown() {
+    public void putOnCooldown() {
+        cooldown = getMaxCooldown();
+    }
+
+    /**
+     * Do not override this method, only {@link #getMaxCooldown()}
+     */
+    @ApiStatus.Internal
+    @Override
+    public void removeCooldown() {
         cooldown = 0;
     }
 
     /**
-     * Do not override this method, only {@link #getCooldown()}
+     * Do not override this method, only {@link #getMaxCooldown()}
      */
     @ApiStatus.Internal
     @Override
     public void decrementCooldown() {
-        cooldown--;
+        cooldown = Math.max(0, cooldown - 1);
     }
 }

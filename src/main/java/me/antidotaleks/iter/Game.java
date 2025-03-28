@@ -91,7 +91,7 @@ public class Game implements Listener {
 
 
 
-    public void start() {
+    public void startGame() {
         Iter.logger.info("Starting game");
 
         for (int teamIndex = 0; teamIndex < map.getTeamsAmount(); teamIndex++) {
@@ -111,7 +111,7 @@ public class Game implements Listener {
         roundStart();
     }
 
-    public void stop() {
+    public void stopGame() {
         map.removeMap(mapLocation);
         teamDisplay.remove();
 

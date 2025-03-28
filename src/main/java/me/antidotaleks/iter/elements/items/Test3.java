@@ -2,6 +2,7 @@ package me.antidotaleks.iter.elements.items;
 
 import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.elements.GamePlayer;
+import me.antidotaleks.iter.utils.items.GameItem;
 
 public class Test3 extends ItemWalk implements Conditional {
     /**
@@ -29,6 +30,11 @@ public class Test3 extends ItemWalk implements Conditional {
 
     @Override
     public boolean isBlocked() {
-        return true;
+        return false;
+    }
+
+    @Override
+    public boolean isBlocking(GameItem item) {
+        return false;
     }
 }

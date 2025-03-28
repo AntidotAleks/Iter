@@ -4,8 +4,9 @@ public interface Cooldown {
     /**
      * @return the cooldown of the item in rounds
      */
+    int getMaxCooldown();
     int getCooldown();
-    void cooldown();
-    void undoCooldown();
+    void putOnCooldown();
+    void removeCooldown();
     void decrementCooldown();
 }

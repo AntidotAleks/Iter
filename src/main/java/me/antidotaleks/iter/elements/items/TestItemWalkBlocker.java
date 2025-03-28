@@ -4,6 +4,7 @@ import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.utils.items.GameItem;
 import me.antidotaleks.iter.utils.items.specific.CooldownGameItem;
+import me.antidotaleks.iter.utils.items.specific.MovementGameItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -19,17 +20,17 @@ public class TestItemWalkBlocker extends CooldownGameItem implements Conditional
 
     @Override
     public int getEnergyUsage() {
-        return 3;
+        return 1;
     }
 
     @Override
-    public int getCooldown() {
+    public int getMaxCooldown() {
         return 2;
     }
 
     @Override
     public boolean usable(@NotNull Point coords) {
-        return false;
+        return true;
     }
 
     @Override
@@ -49,11 +50,11 @@ public class TestItemWalkBlocker extends CooldownGameItem implements Conditional
 
     @Override
     public boolean isBlocked() {
-        return player.getItemsUsed().stream().anyMatch(x -> x.getKey() instanceof ItemWalk);
+        return player.getItemsUsed().stream().anyMatch(pair -> pair.getKey() instanceof MovementGameItem);
     }
 
     @Override
     public boolean isBlocking(GameItem item) {
-        return item instanceof ItemWalk;
+        return item instanceof MovementGameItem;
     }
 }

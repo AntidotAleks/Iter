@@ -13,35 +13,45 @@ public abstract class CooldownGameItem extends GameItem implements Cooldown {
      */
     public CooldownGameItem(GamePlayer player) {
         super(player);
+        putOnCooldown();
     }
 
     private int cooldown;
 
     /**
-     * Do not override this method, only {@link #getCooldown()}
+     * Do not override this method, only {@link #getMaxCooldown()}
      */
     @ApiStatus.Internal
     @Override
-    public void cooldown() {
-        cooldown = getCooldown();
+    public int getCooldown() {
+        return cooldown;
     }
 
     /**
-     * Do not override this method, only {@link #getCooldown()}
+     * Do not override this method, only {@link #getMaxCooldown()}
      */
     @ApiStatus.Internal
     @Override
-    public void undoCooldown() {
+    public void putOnCooldown() {
+        cooldown = getMaxCooldown();
+    }
+
+    /**
+     * Do not override this method, only {@link #getMaxCooldown()}
+     */
+    @ApiStatus.Internal
+    @Override
+    public void removeCooldown() {
         cooldown = 0;
     }
 
 
     /**
-     * Do not override this method, only {@link #getCooldown()}
+     * Do not override this method, only {@link #getMaxCooldown()}
      */
     @ApiStatus.Internal
     @Override
     public void decrementCooldown() {
-        cooldown--;
+        cooldown = Math.max(0, cooldown - 1);
     }
 }
