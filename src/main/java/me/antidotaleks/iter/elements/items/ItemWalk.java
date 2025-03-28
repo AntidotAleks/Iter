@@ -2,6 +2,7 @@ package me.antidotaleks.iter.elements.items;
 
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.utils.items.specific.MovementGameItem;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 
@@ -20,7 +21,7 @@ public class ItemWalk extends MovementGameItem {
     }
 
     @Override
-    public boolean usable(Point coords) {
+    public boolean usable(@NotNull Point coords) {
         // Walkable distance is 1 tile
         if(tilesAway(getCurrentPosition(), coords) != 1)
             return false;

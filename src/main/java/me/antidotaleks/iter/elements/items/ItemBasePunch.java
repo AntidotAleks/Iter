@@ -6,6 +6,7 @@ import me.antidotaleks.iter.elements.GamePlayer;
 import org.bukkit.Location;
 import org.bukkit.Particle;
 import org.bukkit.util.Vector;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 
@@ -22,7 +23,7 @@ public class ItemBasePunch extends GameItem {
     }
 
     @Override
-    public boolean usable(Point coords) {
+    public boolean usable(@NotNull Point coords) {
         if (tilesAway(getCurrentPosition(), coords) != 1)
             return false;
         return TargetSelector.ENEMY.isAcceptable(coords, player);

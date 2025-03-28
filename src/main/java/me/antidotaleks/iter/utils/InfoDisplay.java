@@ -71,7 +71,6 @@ public final class InfoDisplay {
     }
 
     public void nextTurn() {
-        updateBlockedList();
         updateInfoDisplays();
     }
 

@@ -7,6 +7,7 @@ import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.utils.FakePlayer;
 import me.antidotaleks.iter.utils.InfoDisplay;
 import me.antidotaleks.iter.utils.TeamStyling;
+import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.utils.items.GameItem;
 import me.antidotaleks.iter.utils.items.PreUsed;
@@ -91,7 +92,7 @@ public final class GamePlayer implements Listener {
         items.add(new ItemSwiftStep(this));
         items.add(new ItemBasePunch(this));
         items.add(new Test1(this));
-        items.add(new Test2(this));
+        items.add(new TestItemWalkBlocker(this));
         items.add(new Test3(this));
     }
 
@@ -159,7 +160,7 @@ public final class GamePlayer implements Listener {
 
     boolean canPlay = false;
 
-    public void startTurn() {
+    public void roundStart() {
         canPlay = true;
         infoDisplay.showCursor();
     }
@@ -169,6 +170,13 @@ public final class GamePlayer implements Listener {
         infoDisplay.hideCursor();
 
         Bukkit.getPluginManager().callEvent(new PlayerFinishTurnEvent(this));
+    }
+
+    public void roundEnd() {
+        itemsUsed.clear();
+        nextStep.clear();
+        // Just in case
+
     }
 
     // Utils
@@ -207,6 +215,9 @@ public final class GamePlayer implements Listener {
             return;
         if (item instanceof Cooldown itemCooldown && itemCooldown.getCooldown() > 0)
             return;
+        if (item instanceof Conditional itemConditional && itemConditional.isBlocked())
+            return;
+
 
         itemsUsed.add(Map.entry(item, tilePos));
 
@@ -214,6 +225,8 @@ public final class GamePlayer implements Listener {
             itemPreUsed.preUse(tilePos);
         if (item instanceof Cooldown itemCooldown)
             itemCooldown.cooldown();
+        if (item instanceof Conditional)
+            updateItemBlocks();
 
         infoDisplay.changeSelectedCard();
         Iter.logger.info(player.getName()+" used at tile: [" + tilePos.x + ", " + tilePos.y+"]");
@@ -237,6 +250,9 @@ public final class GamePlayer implements Listener {
         Iter.logger.info(player.getName()+" undo use");
     }
 
+    private void updateItemBlocks() {
+        // itemsUsed.forEach(x -> x.getKey().updateIsBlocked());
+    }
 
     public void teleport(Location loc) {
         List<Entity> passengers = player.getPassengers();

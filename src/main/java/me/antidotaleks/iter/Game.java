@@ -136,12 +136,11 @@ public class Game implements Listener {
 
         playersFinishedTurn.addAll(List.of(teams[currentTeamPlay()]));
 
-        for (GamePlayer player : teams[currentTeamPlay()]) {
-            player.startTurn();
-        }
+        for (GamePlayer player : teams[currentTeamPlay()])
+            player.roundStart();
     }
 
-    private void roundEnd() {
+    private void roundFinishing() {
 
         new BukkitRunnable() { @Override public void run() {
             boolean allItemsUsed = true;
@@ -152,16 +151,21 @@ public class Game implements Listener {
             }
 
             if(allItemsUsed) {
-                for (GamePlayer player : teams[currentTeamPlay()]) {
-                    player.setEnergy(player.getMaxEnergy());
-                    player.updateInfo();
-                }
-
                 cancel();
-                stepPlayIndex();
-                roundStart();
+                roundEnd();
             }
         }}.runTaskTimer(Iter.plugin, 0, 10);
+    }
+
+    private void roundEnd() {
+        for (GamePlayer player : teams[currentTeamPlay()]) {
+            player.roundEnd();
+            player.setEnergy(player.getMaxEnergy());
+            player.updateInfo();
+        }
+
+        stepPlayIndex();
+        roundStart();
     }
 
     ArrayList<GamePlayer> playersFinishedTurn = new ArrayList<>();
@@ -181,7 +185,7 @@ public class Game implements Listener {
         if (!playersFinishedTurn.isEmpty())
             return;
 
-        roundEnd();
+        roundFinishing();
     }
     
     // Utils

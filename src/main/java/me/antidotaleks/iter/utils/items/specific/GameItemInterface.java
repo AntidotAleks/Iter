@@ -2,6 +2,7 @@ package me.antidotaleks.iter.utils.items.specific;
 
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.utils.items.GameItem;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 
@@ -15,7 +16,7 @@ public interface GameItemInterface {
      * @see #getEnergyUsage()
      * @see GameItem.TargetSelector#isAcceptable(Point, GamePlayer)
      */
-    boolean usable(Point coords);
+    boolean usable(@NotNull Point coords);
 
     void use(Point coords);
 

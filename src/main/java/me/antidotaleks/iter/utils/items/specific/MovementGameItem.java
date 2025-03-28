@@ -3,6 +3,7 @@ package me.antidotaleks.iter.utils.items.specific;
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.utils.items.GameItem;
 import me.antidotaleks.iter.utils.items.PreUsed;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ public abstract class MovementGameItem extends GameItem implements PreUsed {
      * @return {@code true} if the player can use the item at the given coordinates, otherwise {@code false}
      */
     @Override
-    public boolean usable(Point coords) {
+    public boolean usable(@NotNull Point coords) {
         // Check if the player is not overlapping with players from other teams
         if (!isWalkable(coords))
             return false;
