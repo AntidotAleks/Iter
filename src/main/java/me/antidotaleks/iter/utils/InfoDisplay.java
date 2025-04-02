@@ -8,7 +8,6 @@ import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.utils.items.GameItem;
 import net.kyori.adventure.audience.Audience;
-import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
 import net.md_5.bungee.api.ChatColor;
@@ -33,7 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static me.antidotaleks.iter.Iter.offset;
+import static me.antidotaleks.iter.Iter.*;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.translatable;
 import static net.kyori.adventure.text.format.NamedTextColor.BLACK;
@@ -188,7 +187,7 @@ public final class InfoDisplay {
             int cooldown = itemCooldown.getCooldown();
             cardList = cardList
                     .append(offset(-31 - (cooldown+"").length()*3))
-                    .append(text(cooldown+"", TEXT_OFFSET_FONT[4 + (index == i ? 0 : 1)]))
+                    .append(text(cooldown+"", MONO_OFFSET_FONTS[4 + (index == i ? 0 : 1)]))
                     .append(offset( 31 - (cooldown+"").length()*3));
         }
 
@@ -274,19 +273,6 @@ public final class InfoDisplay {
 
     // Adventure API components generators for cards
 
-    private static final Style[]
-            CARD_FONT = new Style[]{
-                    Style.empty().font(Key.key("cards")),
-                    Style.empty().font(Key.key("cards_low"))
-            },
-            TEXT_OFFSET_FONT = new Style[]{
-                    Style.empty().font(Key.key("mono")),
-                    Style.empty().font(Key.key("mono_low1")),
-                    Style.empty().font(Key.key("mono_low2")),
-                    Style.empty().font(Key.key("mono_low3")),
-                    Style.empty().font(Key.key("mono_low4")),
-                    Style.empty().font(Key.key("mono_low5"))
-            };
     private Component actionbarCard(GameItem item, boolean raised) {
         String[] title = cardTitle(item.getName());
         int offset = raised?0:1;
@@ -301,7 +287,7 @@ public final class InfoDisplay {
         };
         for (int i = 0; i < 3; i++) {
             Component line = text(title[i])
-                    .style(TEXT_OFFSET_FONT[offset+i].color(BLACK));
+                    .style(MONO_OFFSET_FONTS[offset+i].color(BLACK));
 
             card = card.append(offsets[i]);
             card = card.append(line);
@@ -322,7 +308,7 @@ public final class InfoDisplay {
                 .append(text(CARD_BACKSIDE, CARD_FONT[0]));
         card[1] = Component.empty();
         for (int i = 1; i <= 8; i++) {
-            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, TEXT_OFFSET_FONT[0].color(BLACK));
+            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, MONO_OFFSET_FONTS[0].color(BLACK));
         }
 
         return card;

@@ -276,4 +276,16 @@ public class Game implements Listener {
     public List<Player> getAllPlayers() {
         return Arrays.stream(teamsBukkit).flatMap(Arrays::stream).toList();
     }
+
+    public int getTeamHealth(int teamIndex) {
+        return Arrays.stream(teams[teamIndex])
+                .mapToInt(GamePlayer::getHealth)
+                .sum();
+    }
+
+    public int getTeamMaxHealth(int teamIndex) {
+        return Arrays.stream(teams[teamIndex])
+                .mapToInt(GamePlayer::getMaxHealth)
+                .sum();
+    }
 }

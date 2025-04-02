@@ -77,7 +77,21 @@ public final class Iter extends JavaPlugin {
     public static final BlockData AIR_DATA = Bukkit.createBlockData(Material.AIR);
     public static final BlockData BARRIER_DATA = Bukkit.createBlockData(Material.BARRIER);
 
-    // Utils
+    // Font utils
+
+    public static final Style[]
+            CARD_FONT = new Style[]{
+            Style.empty().font(Key.key("cards")),
+            Style.empty().font(Key.key("cards_low"))
+    },
+            MONO_OFFSET_FONTS = new Style[]{
+                    Style.empty().font(Key.key("mono")),
+                    Style.empty().font(Key.key("mono_low1")),
+                    Style.empty().font(Key.key("mono_low2")),
+                    Style.empty().font(Key.key("mono_low3")),
+                    Style.empty().font(Key.key("mono_low4")),
+                    Style.empty().font(Key.key("mono_low5"))
+            };
 
     public static TranslatableComponent offset(int offset) {
         if (offset < -8192 || offset > 8192) throw new IllegalArgumentException("Offset out of bounds, must be in [-8192, 8192]");

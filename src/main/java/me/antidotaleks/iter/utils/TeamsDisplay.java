@@ -7,12 +7,11 @@ import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
-import net.kyori.adventure.text.format.TextColor;
 import org.bukkit.entity.Player;
 
-import java.awt.*;
 import java.util.Arrays;
 
+import static me.antidotaleks.iter.Iter.MONO_OFFSET_FONTS;
 import static me.antidotaleks.iter.Iter.offset;
 import static net.kyori.adventure.text.Component.text;
 
@@ -35,9 +34,12 @@ public final class TeamsDisplay {
         for (int i = 0; i < teamAmount; i++) {
             this.teamAudiences[i] = getTeamAudience(teamsBukkit[i]);
             this.bossbars[i] = BossBar.bossBar(Component.empty(), BossBar.MAX_PROGRESS, BossBar.Color.PINK, BossBar.Overlay.PROGRESS);
+            this.bossbarTexts[i] = new Component[teamAmount];
 
             this.bossbars[i].addViewer(this.teamAudiences[i]);
         }
+
+        setupBossbarTexts();
     }
 
     // Utils
@@ -50,19 +52,13 @@ public final class TeamsDisplay {
 
     public void updateTeamTurn() {
         for (int bossbarIndex = 0; bossbarIndex < bossbars.length; bossbarIndex++) {
-            BossBar bossBar = bossbars[bossbarIndex];
+            BossBar bossbar = bossbars[bossbarIndex];
             int currentTeamPlayIndex = game.currentTeamPlay();
             int teamsAmount = game.teamAmount();
 
-            if (bossbarIndex == currentTeamPlayIndex)
-                bossBar.name( text("Your turn"));
-            else {
-                int inXTurns = (bossbarIndex - currentTeamPlayIndex + teamsAmount) % teamsAmount;
-                bossBar.name( text( String.format(
-                        "Team %s's turn (Yours in %d turn%s)",
-                        game.getTeamStylings()[currentTeamPlayIndex], inXTurns, inXTurns == 1 ? "" : "s"
-                )));
-            }
+            Component bossbarText = bossbarTexts[bossbarIndex][currentTeamPlayIndex];
+
+            updateBossbarText(bossbar, bossbarText);
         }
     }
 
@@ -77,27 +73,40 @@ public final class TeamsDisplay {
             }
     }
 
-    private static final Style MONO_FONT = Style.empty().font(Key.key("mono"));
     private static final Style TOPBAR_FONT = Style.empty().font(Key.key("topbar"));
     private static final String[] TOPBAR_BACKGROUND_SYMBOLS = new String[]{"\uE000", "\uE001"};
     private Component getBossbarText(int currentTurn, int currentTeamIndex, int teamAmount, TeamStyling[] teamStylings) {
         Component bossbarText = Component.empty();
 
         for (TeamStyling teamStyling : teamStylings) {
-            Color color = teamStyling.color, lightColor = teamStyling.lightColor;
-            String name = teamStyling.name();
+            final String name = teamStyling.name();
+
             bossbarText = bossbarText
-                    .append(text(TOPBAR_BACKGROUND_SYMBOLS[0], TOPBAR_FONT))                                            // Frame
-                    .append(offset(-43))                                                                                // Left side
-                    .append(text(TOPBAR_BACKGROUND_SYMBOLS[1], TOPBAR_FONT                                              //Painted transparent background
-                            .color(TextColor.color(color.getRed(), color.getGreen(), color.getBlue()))))
+                    .append(text(TOPBAR_BACKGROUND_SYMBOLS[0], TOPBAR_FONT.color(teamStyling.lightTextColor)))          // Frame
+                    .append(offset(-44))                                                                                // Frame left side
+                    .append(text(TOPBAR_BACKGROUND_SYMBOLS[1], TOPBAR_FONT.color(teamStyling.textColor)))               // Painted transparent background
                     .append(offset(-21 - name.length() * 3))                                                            // center + text padding
-                    .append(text(name, MONO_FONT                                                                        // Team name
-                            .color(TextColor.color(lightColor.getRed(), lightColor.getGreen(), lightColor.getBlue()))))
-                    .append(offset(21 - name.length() * 3));                                                            // Right side (padding)
+                    .append(text(name, MONO_OFFSET_FONTS[0].color(teamStyling.lightTextColor)))                         // Team name
+                    .append(offset(21 - name.length() * 3 + 2));                                                        // Frame right side (padding) + frame padding
         }
 
-        return bossbarText;
+        final int inXTurns = (currentTeamIndex - currentTurn + teamAmount) % teamAmount;
+        String turnText = currentTurn == currentTeamIndex ? "Your turn" :
+                String.format(
+                        "Team %s's turn (Yours in %d turn%s)",
+                        teamStylings[currentTurn].name(), inXTurns, inXTurns == 1 ? "" : "s"
+                );
+
+        bossbarText = bossbarText
+                .append(offset(-teamAmount*45))                                                                         // Left side
+                .append(text(turnText, MONO_OFFSET_FONTS[2]))                                                           // Turn text
+                .append(offset(teamAmount*45 - turnText.length() * 6));                                                 // Right side (padding)
+
+        return bossbarText.compact();
+    }
+
+    private void updateBossbarText(BossBar bossbar, Component bossbarText) {
+        bossbar.name(bossbarText);
     }
 
     public void remove() {
