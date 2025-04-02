@@ -21,6 +21,7 @@ public final class TeamsDisplay {
     private final Audience[] teamAudiences;
     private final BossBar[] bossbars;
     private final Component[][] bossbarTexts;
+    private final TeamStyling[] teamStylings;
 
     public TeamsDisplay(Game game) {
         this.game = game;
@@ -30,6 +31,7 @@ public final class TeamsDisplay {
         this.teamAudiences = new Audience[teamAmount];
         this.bossbars = new BossBar[teamAmount];
         this.bossbarTexts = new Component[teamAmount][];
+        this.teamStylings = game.getTeamStylings();
 
         for (int i = 0; i < teamAmount; i++) {
             this.teamAudiences[i] = getTeamAudience(teamsBukkit[i]);
@@ -64,7 +66,6 @@ public final class TeamsDisplay {
 
     private void setupBossbarTexts() {
         int teamAmount = bossbars.length;
-        TeamStyling[] teamStylings = game.getTeamStylings();
 
         for (int currentTurn = 0; currentTurn < teamAmount; currentTurn++)
             for (int currentTeamIndex = 0; currentTeamIndex < teamAmount; currentTeamIndex++) {
@@ -86,7 +87,7 @@ public final class TeamsDisplay {
                     .append(offset(-44))                                                                                // Frame left side
                     .append(text(TOPBAR_BACKGROUND_SYMBOLS[1], TOPBAR_FONT.color(teamStyling.textColor)))               // Painted transparent background
                     .append(offset(-21 - name.length() * 3))                                                            // center + text padding
-                    .append(text(name, MONO_OFFSET_FONTS[0].color(teamStyling.lightTextColor)))                         // Team name
+                    .append(text(name, MONO_OFFSET_FONTS[0]))                                                           // Team name
                     .append(offset(21 - name.length() * 3 + 2));                                                        // Frame right side (padding) + frame padding
         }
 
@@ -100,12 +101,21 @@ public final class TeamsDisplay {
         bossbarText = bossbarText
                 .append(offset(-teamAmount*45))                                                                         // Left side
                 .append(text(turnText, MONO_OFFSET_FONTS[2]))                                                           // Turn text
-                .append(offset(teamAmount*45 - turnText.length() * 6));                                                 // Right side (padding)
+                .append(offset(-turnText.length()*6));                                                                  // Right side (padding)
 
         return bossbarText.compact();
     }
 
     private void updateBossbarText(BossBar bossbar, Component bossbarText) {
+        for (int i = 0; i < bossbars.length; i++) {
+            String percentage = (int) Math.ceil(((double) game.getTeamHealth(i) / game.getTeamMaxHealth(i)) * 100) + "%";
+
+            bossbarText = bossbarText
+                    .append(offset(22 - (int) Math.floor(percentage.length() * 2.5)))
+                    .append(text(percentage, TOPBAR_FONT))
+                    .append(offset(22 - (int) Math.ceil(percentage.length() * 2.5) + 2));
+        }
+
         bossbar.name(bossbarText);
     }
 
