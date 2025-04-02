@@ -2,8 +2,11 @@ package me.antidotaleks.iter;
 
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
+import net.kyori.adventure.key.Key;
 import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TranslatableComponent;
+import net.kyori.adventure.text.format.Style;
 import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.exception.NoPacketAdapterAvailableException;
 import net.megavex.scoreboardlibrary.api.noop.NoopScoreboardLibrary;
@@ -73,4 +76,11 @@ public final class Iter extends JavaPlugin {
 
     public static final BlockData AIR_DATA = Bukkit.createBlockData(Material.AIR);
     public static final BlockData BARRIER_DATA = Bukkit.createBlockData(Material.BARRIER);
+
+    // Utils
+
+    public static TranslatableComponent offset(int offset) {
+        if (offset < -8192 || offset > 8192) throw new IllegalArgumentException("Offset out of bounds, must be in [-8192, 8192]");
+        return Component.translatable("space."+offset).style(Style.style().font(Key.key("default")));
+    }
 }

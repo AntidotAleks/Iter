@@ -4,7 +4,7 @@ import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.maps.Map;
 import me.antidotaleks.iter.utils.TeamStyling;
-import me.antidotaleks.iter.utils.TeamDisplay;
+import me.antidotaleks.iter.utils.TeamsDisplay;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -25,22 +25,22 @@ public class Game implements Listener {
     // Teams
     private final GamePlayer[][] teams;
     private final Player[][] teamsBukkit;
-    private final TeamStyling[] teamDetails;
+    private final TeamStyling[] teamStylings;
+    private TeamsDisplay teamsDisplay;
     // Turns
     private int currentTeamPlayIndex = 0;
     private final int[] teamPlayOrder;
     // Map
     private final Map map;
     private final Location mapLocation;
-    // Other
-    TeamDisplay teamDisplay;
+
 
     public Game(Player[][] playersInTeams, Map map) {
         Iter.logger.info("Creating game with map " + map.getDisplayName());
         this.map = map;
         this.mapLocation = map.buildMap();
         this.teamPlayOrder = map.teamPlayOrder();
-        this.teamDetails = TeamStyling.getColors(playersInTeams.length);
+        this.teamStylings = TeamStyling.getColors(playersInTeams.length);
 
         // shuffle teams by teamPlayOrder
 
@@ -69,8 +69,7 @@ public class Game implements Listener {
                 player.setFlying(true);
                 player.addPotionEffect(
                         new org.bukkit.potion.PotionEffect(
-                                PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false
-                        )
+                                PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false)
                 );
             }
 
@@ -107,13 +106,13 @@ public class Game implements Listener {
             }
         }
 
-        teamDisplay = new TeamDisplay(this);
+        teamsDisplay = new TeamsDisplay(this);
         roundStart();
     }
 
     public void stopGame() {
         map.removeMap(mapLocation);
-        teamDisplay.remove();
+        teamsDisplay.remove();
 
         for (GamePlayer[] team : teams) {
             for (GamePlayer player : team) {
@@ -131,8 +130,8 @@ public class Game implements Listener {
     }
 
     private void roundStart() {
-        teamDisplay.updateTeamTurn();
-        getAllPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamDetails[currentTeamPlay()].toString() +" turn", 5, 35, 5));
+        teamsDisplay.updateTeamTurn();
+        getAllPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStylings[currentTeamPlay()].toString() +" turn", 5, 35, 5));
 
         playersFinishedTurn.addAll(List.of(teams[currentTeamPlay()]));
 
@@ -266,12 +265,12 @@ public class Game implements Listener {
         return teamsBukkit;
     }
 
-    public TeamStyling[] getTeamDetails() {
-        return teamDetails;
+    public TeamStyling[] getTeamStylings() {
+        return teamStylings;
     }
 
     public TeamStyling getTeamDetails(Player player) {
-        return teamDetails[getTeamIndex(player)];
+        return teamStylings[getTeamIndex(player)];
     }
 
     public List<Player> getAllPlayers() {

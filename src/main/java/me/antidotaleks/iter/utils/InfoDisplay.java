@@ -10,9 +10,7 @@ import me.antidotaleks.iter.utils.items.GameItem;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.key.Key;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TranslatableComponent;
 import net.kyori.adventure.text.format.Style;
-import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -35,8 +33,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static me.antidotaleks.iter.Iter.offset;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.Component.translatable;
 import static net.kyori.adventure.text.format.NamedTextColor.BLACK;
-import static net.kyori.adventure.text.format.NamedTextColor.WHITE;
 
 public final class InfoDisplay {
 
@@ -58,7 +58,7 @@ public final class InfoDisplay {
         this.fakePlayer = player.getFakePlayer();
         this.player = player.getPlayer();
         this.audience = Iter.audiences.player(this.player);
-        this.teamStyling = gamePlayer.getTeamDetails();
+        this.teamStyling = gamePlayer.getTeamStyling();
 
         // Create displays
         infoDisplay = newAbovePlayerInfoDisplay(true);
@@ -179,7 +179,7 @@ public final class InfoDisplay {
                 continue;
             }
 
-            cardList = cardList.append(translatable(CARD_BLOCK, CARD_OFFSET_FONT[index == i ? 0 : 1]));
+            cardList = cardList.append(text(CARD_BLOCK, CARD_FONT[index == i ? 0 : 1]));
 
             GameItem item = pair.getFirst();
             if (!(item instanceof Cooldown itemCooldown) || itemCooldown.getCooldown() == 0)
@@ -188,7 +188,7 @@ public final class InfoDisplay {
             int cooldown = itemCooldown.getCooldown();
             cardList = cardList
                     .append(offset(-31 - (cooldown+"").length()*3))
-                    .append(translatable(cooldown+"", TEXT_OFFSET_FONT[4 + (index == i ? 0 : 1)]))
+                    .append(text(cooldown+"", TEXT_OFFSET_FONT[4 + (index == i ? 0 : 1)]))
                     .append(offset( 31 - (cooldown+"").length()*3));
         }
 
@@ -274,9 +274,19 @@ public final class InfoDisplay {
 
     // Adventure API components generators for cards
 
-    private static final String[]
-            CARD_OFFSET_FONT = new String[]{"cards", "cards_low"},
-            TEXT_OFFSET_FONT = new String[]{"mono", "mono_low1", "mono_low2", "mono_low3", "mono_low4", "mono_low5"};
+    private static final Style[]
+            CARD_FONT = new Style[]{
+                    Style.empty().font(Key.key("cards")),
+                    Style.empty().font(Key.key("cards_low"))
+            },
+            TEXT_OFFSET_FONT = new Style[]{
+                    Style.empty().font(Key.key("mono")),
+                    Style.empty().font(Key.key("mono_low1")),
+                    Style.empty().font(Key.key("mono_low2")),
+                    Style.empty().font(Key.key("mono_low3")),
+                    Style.empty().font(Key.key("mono_low4")),
+                    Style.empty().font(Key.key("mono_low5"))
+            };
     private Component actionbarCard(GameItem item, boolean raised) {
         String[] title = cardTitle(item.getName());
         int offset = raised?0:1;
@@ -290,8 +300,8 @@ public final class InfoDisplay {
                 offset(-3*title[2].length() + 30)
         };
         for (int i = 0; i < 3; i++) {
-            Component line = Component.text(title[i])
-                    .style(Style.style().font(Key.key(TEXT_OFFSET_FONT[offset+i])).color(BLACK));
+            Component line = text(title[i])
+                    .style(TEXT_OFFSET_FONT[offset+i].color(BLACK));
 
             card = card.append(offsets[i]);
             card = card.append(line);
@@ -306,13 +316,13 @@ public final class InfoDisplay {
     private static Component[] sidebarCard(GameItem item) {
         Component[] card = new Component[10];
 
-        card[0] = Component.text(SIDEBAR_CARD_OFFSETS[0])
+        card[0] = text(SIDEBAR_CARD_OFFSETS[0])
                 .append(cardInfoBase(item, false))
-                .append(Component.text(SIDEBAR_CARD_OFFSETS[1]))
-                .append(translatable(CARD_BACKSIDE, "cards"));
+                .append(text(SIDEBAR_CARD_OFFSETS[1]))
+                .append(text(CARD_BACKSIDE, CARD_FONT[0]));
         card[1] = Component.empty();
         for (int i = 1; i <= 8; i++) {
-            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, BLACK, "mono");
+            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, TEXT_OFFSET_FONT[0].color(BLACK));
         }
 
         return card;
@@ -324,17 +334,17 @@ public final class InfoDisplay {
             SPACE_WIDTH = 15;
     private static Component cardInfoBase(GameItem item, boolean raised) {
         int offset = raised?0:1;
-        Component card = translatable(item.getCardSymbol()+"", CARD_OFFSET_FONT[offset])
+        Component card = text(item.getCardSymbol(), CARD_FONT[offset])
                 .append(offset(-57));
 
-        final Style digitsStyle = Style.style().color(BLACK).font(Key.key(CARD_OFFSET_FONT[offset])).build();
+        final Style digitsStyle = CARD_FONT[offset].color(BLACK);
 
         // Item with rounds Cooldown
 
         if (item instanceof Cooldown itemCooldown)
             card = card
-                    .append(translatable("\uEFF0", CARD_OFFSET_FONT[offset]))
-                    .append(Component.text(itemCooldown.getMaxCooldown(), digitsStyle))
+                    .append(text("\uEFF0", CARD_FONT[offset]))
+                    .append(text(itemCooldown.getMaxCooldown(), digitsStyle))
                     .append(offset((SPACE_WIDTH-2 - String.valueOf(itemCooldown.getMaxCooldown()).length() * DIGIT_WIDTH))); // why tf is this -2? Why not -1? Why it works?
         else
             card = card.append(offset(CHAR_WIDTH-1 + SPACE_WIDTH));
@@ -343,7 +353,7 @@ public final class InfoDisplay {
 
         if (item instanceof Conditional)
             card = card
-                    .append(translatable("\uEFF1", CARD_OFFSET_FONT[offset]));
+                    .append(text("\uEFF1", CARD_FONT[offset]));
         else
             card = card.append(offset(CHAR_WIDTH));
 
@@ -353,8 +363,8 @@ public final class InfoDisplay {
         if (energy != 0)
             card = card
                     .append(offset((SPACE_WIDTH - String.valueOf(energy).length() * DIGIT_WIDTH)))
-                    .append(Component.text(energy, digitsStyle))
-                    .append(translatable("\uEFF2", CARD_OFFSET_FONT[offset]))
+                    .append(text(energy, digitsStyle))
+                    .append(text("\uEFF2", CARD_FONT[offset]))
                     .append(offset(4));
         else
             card = card.append(offset(CHAR_WIDTH + SPACE_WIDTH + 4));
@@ -398,19 +408,5 @@ public final class InfoDisplay {
 
     public Player getPlayer() {
         return player;
-    }
-
-    public static TranslatableComponent offset(int offset) {
-        if (offset < -8192 || offset > 8192) throw new IllegalArgumentException("Offset out of bounds, must be in [-8192, 8192]");
-        return translatable("space."+offset);
-    }
-    private static TranslatableComponent translatable(String key) {
-        return translatable(key, WHITE, "default");
-    }
-    private static TranslatableComponent translatable(String key, String font) {
-        return translatable(key, WHITE, font);
-    }
-    private static TranslatableComponent translatable(String key, TextColor color, String font) {
-        return Component.translatable(key).style(Style.style().color(color).font(Key.key(font)).build());
     }
 }

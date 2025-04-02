@@ -435,7 +435,7 @@ public final class GamePlayer implements Listener {
         return game.getTeamIndex(player);
     }
 
-    public TeamStyling getTeamDetails() {
+    public TeamStyling getTeamStyling() {
         return teamStyling;
     }
 
