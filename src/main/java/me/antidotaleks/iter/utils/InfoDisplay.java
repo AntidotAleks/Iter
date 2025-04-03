@@ -308,7 +308,7 @@ public final class InfoDisplay {
                 .append(text(CARD_BACKSIDE, CARD_FONT[0]));
         card[1] = Component.empty();
         for (int i = 1; i <= 8; i++) {
-            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, MONO_OFFSET_FONTS[0].color(BLACK));
+            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, MONO_OFFSET_FONTS[0].color(BLACK)).append(offset(-8192));
         }
 
         return card;

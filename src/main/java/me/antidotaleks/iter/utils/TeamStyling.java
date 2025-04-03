@@ -7,13 +7,13 @@ import java.awt.*;
 public enum TeamStyling {
     // Pastel colors
     RED    (new Color(217, 93,  93 ),
-            new Color(246, 230, 230)),
+            new Color(246, 220, 220)),
     BLUE   (new Color(63 , 130, 207),
             new Color(224, 233, 243)),
     GREEN  (new Color(121, 211, 62 ),
-            new Color(228, 241, 221)),
+            new Color(220, 245, 220)),
     YELLOW (new Color(232, 196, 60 ),
-            new Color(242, 238, 222)),
+            new Color(242, 240, 220)),
     PINK   (new Color(227, 106, 185),
             new Color(246, 225, 239)),
     CYAN   (new Color(100, 196, 228),
@@ -25,7 +25,7 @@ public enum TeamStyling {
     WHITE  (new Color(236, 240, 241),
             new Color(252, 252, 253)),
     BLACK  (new Color(52 , 73 , 94 ),
-            new Color(234, 234, 235)),
+            new Color(220, 220, 220)),
 
     ;
 

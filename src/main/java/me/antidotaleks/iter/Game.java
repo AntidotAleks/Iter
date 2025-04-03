@@ -130,7 +130,7 @@ public class Game implements Listener {
     }
 
     private void roundStart() {
-        teamsDisplay.updateTeamTurn();
+        teamsDisplay.updateBossbars();
         getAllPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStylings[currentTeamPlay()].toString() +" turn", 5, 35, 5));
 
         playersFinishedTurn.addAll(List.of(teams[currentTeamPlay()]));
@@ -148,6 +148,8 @@ public class Game implements Listener {
                 allItemsUsed = !player.useNextItem() && allItemsUsed;
                 // Becomes false if at least 1 player had an item to use
             }
+
+            teamsDisplay.updateBossbars();
 
             if(allItemsUsed) {
                 cancel();
