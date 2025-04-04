@@ -131,7 +131,7 @@ public class Game implements Listener {
 
     private void roundStart() {
         teamsDisplay.updateBossbars();
-        getAllPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStylings[currentTeamPlay()].toString() +" turn", 5, 35, 5));
+        getAllBukkitPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStylings[currentTeamPlay()].toString() +" turn", 5, 35, 5));
 
         playersFinishedTurn.addAll(List.of(teams[currentTeamPlay()]));
 
@@ -150,6 +150,7 @@ public class Game implements Listener {
             }
 
             teamsDisplay.updateBossbars();
+            getAllGamePlayers().forEach(GamePlayer::updateInfo);
 
             if(allItemsUsed) {
                 cancel();
@@ -263,6 +264,10 @@ public class Game implements Listener {
         return -1;
     }
 
+    public GamePlayer[][] getTeams() {
+        return teams;
+    }
+
     public Player[][] getTeamsBukkit() {
         return teamsBukkit;
     }
@@ -275,7 +280,11 @@ public class Game implements Listener {
         return teamStylings[getTeamIndex(player)];
     }
 
-    public List<Player> getAllPlayers() {
+    public List<GamePlayer> getAllGamePlayers() {
+        return Arrays.stream(teams).flatMap(Arrays::stream).toList();
+    }
+
+    public List<Player> getAllBukkitPlayers() {
         return Arrays.stream(teamsBukkit).flatMap(Arrays::stream).toList();
     }
 

@@ -164,7 +164,7 @@ public final class GamePlayer implements Listener {
         canPlay = true;
         infoDisplay.showCursor();
         updateItemBlocks();
-        infoDisplay.changeSelectedCard();
+        updateInfo();
     }
 
     public void finishTurn() {
@@ -187,13 +187,13 @@ public final class GamePlayer implements Listener {
         }
 
         updateItemBlocks();
-        infoDisplay.changeSelectedCard();
+        updateInfo();
     }
 
     // Utils
 
     public void updateInfo() {
-        infoDisplay.updateInfoDisplays();
+        infoDisplay.update();
     }
 
     public void stop() {

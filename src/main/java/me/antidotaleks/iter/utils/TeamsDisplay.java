@@ -40,13 +40,15 @@ public final class TeamsDisplay {
             this.bossbars[i] = BossBar.bossBar(Component.empty(), BossBar.MAX_PROGRESS, BossBar.Color.PINK, BossBar.Overlay.PROGRESS);
             // this.bossbarTexts[i] = new Component[teamAmount]; // TODO: temp
 
-            this.bossbars[i].addViewer(this.teamAudiences[i]);
+            this.bossbars[i].addViewer(this.teamAudiences[i]); // Show the bossbar for current turn
         }
         for (int i = 0; i < 5; i++) {
             this.bossbarTexts[i] = new Component[5];
         } //TODO: temp
 
         setupBossbarTexts();
+
+        game.getAllGamePlayers().forEach(player -> player.getInfoDisplay().showTopBars());
     }
 
     // Utils
@@ -83,7 +85,7 @@ public final class TeamsDisplay {
     private static final String[]
             TOPBAR_S_TEAM = new String[]{"\uE000", "\uE001", "\uE002"},
             TOPBAR_S_TURNS = new String[]{"\uE003", "\uE004", "\uE005", "\uE006", "\uE007", "\uE008"};
-    private Component getBossbarText(int currentTeamPlaying, int currentTeamShownTo, int teamAmount, TeamStyling[] teamStylings) {
+    private static Component getBossbarText(int currentTeamPlaying, int currentTeamShownTo, int teamAmount, TeamStyling[] teamStylings) {
         Component bossbarText = Component.empty();
 
         for (int i = 0; i < teamStylings.length; i++) {

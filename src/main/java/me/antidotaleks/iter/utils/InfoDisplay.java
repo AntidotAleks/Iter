@@ -8,8 +8,10 @@ import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.utils.items.GameItem;
 import net.kyori.adventure.audience.Audience;
+import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -36,6 +38,7 @@ import static me.antidotaleks.iter.Iter.*;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.translatable;
 import static net.kyori.adventure.text.format.NamedTextColor.BLACK;
+import static net.kyori.adventure.text.format.NamedTextColor.WHITE;
 
 public final class InfoDisplay {
 
@@ -48,7 +51,11 @@ public final class InfoDisplay {
     private final TextDisplay infoDisplay;
     private final TextDisplay fakePlayerInfoDisplay;
     private final ItemDisplay cursor;
+    private BossBar bossBar;
     private BukkitRunnable cursorUpdater;
+
+    private static final String HEALTH_COLOR = "ff5252",
+            ENERGY_COLOR = "5297ff";
 
     // Common
 
@@ -65,11 +72,7 @@ public final class InfoDisplay {
 
         cursor = newCursor();
 
-        updateInfoDisplays();
-    }
-
-    public void nextTurn() {
-        updateInfoDisplays();
+        update();
     }
 
     // Display creation
@@ -110,13 +113,19 @@ public final class InfoDisplay {
                 new AxisAngle4f()
         ));
 
-        gamePlayer.getGame().getAllPlayers().forEach(p -> p.hideEntity(Iter.plugin, cursor));
+        gamePlayer.getGame().getAllBukkitPlayers().forEach(p -> p.hideEntity(Iter.plugin, cursor));
         player.showEntity(Iter.plugin, cursor);
 
         return cursor;
     }
 
     // Display
+
+    public void update() {
+        updateInfoDisplays();
+        updateTopBar();
+        changeSelectedCard();
+    }
 
     public void updateInfoDisplays() {
         int health = gamePlayer.getHealth();
@@ -126,11 +135,30 @@ public final class InfoDisplay {
         String teamName = "Team " + teamStyling.toString();
 
         // Update scoreboard
-        String infoString = String.format("%s%s: %s%s\n"+ ChatColor.of("#ff5252") +"❤%d/%d "+ChatColor.RESET+"| "+ChatColor.of("#5297ff")+"♦ %d/%d\n",
+        String infoString = String.format("%s%s: %s%s\n"+ ChatColor.of("#"+HEALTH_COLOR) +"❤%d/%d "+ChatColor.RESET+"| "+ChatColor.of("#"+ENERGY_COLOR)+"♦ %d/%d\n",
                         ChatColor.of(teamStyling.color), teamName, ChatColor.of(teamStyling.lightColor), this.player.getName(), health, maxHealth, energy, maxEnergy);
 
         infoDisplay.setText(infoString);
         fakePlayerInfoDisplay.setText(infoString);
+    }
+
+    public void updateTopBar() {
+        if (bossBar == null)
+            return;
+
+        int health = gamePlayer.getHealth();
+        int maxHealth = gamePlayer.getMaxHealth();
+        int energy = gamePlayer.getEnergy();
+        int maxEnergy = gamePlayer.getMaxEnergy();
+
+        Component tempText = text("❤ "+health+"/"+maxHealth)
+                .color(TextColor.color(Integer.parseInt(HEALTH_COLOR, 16)))
+                .append(text(" | ").color(WHITE))
+                .append(text("♦ "+energy+"/"+maxEnergy)
+                        .color(TextColor.color(Integer.parseInt(ENERGY_COLOR, 16))));
+
+        bossBar.name(tempText);
+        bossBar.progress((float) health / maxHealth);
     }
 
     // Card UI
@@ -241,6 +269,22 @@ public final class InfoDisplay {
         final int[] i = {0};
         return gamePlayer.getItems().stream()
                 .map(pair -> actionbarCard(pair.getFirst(), i[0]++ == activeIndex)).reduce(Component.empty(), Component::append).compact();
+    }
+
+    public void showTopBars() {
+        Audience playerAsAudience = audiences.player(player);
+        bossBar = BossBar.bossBar(Component.empty(), 1, BossBar.Color.RED, BossBar.Overlay.PROGRESS);
+        bossBar.addViewer(playerAsAudience);
+
+        updateTopBar();
+    }
+
+    public void removeTopBar() {
+        if (bossBar == null)
+            return;
+
+        bossBar.removeViewer(audience);
+        bossBar = null;
     }
 
     // Utils
@@ -385,6 +429,10 @@ public final class InfoDisplay {
         split.addFirst(title.substring(0, spaceIndex) + (spaceFound?"":"-"));
         return split;
     }
+
+    // Adventure API components generators for bossbar/topbar
+
+
 
     // Getters
 
