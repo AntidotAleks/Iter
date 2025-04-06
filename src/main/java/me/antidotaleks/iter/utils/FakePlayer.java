@@ -14,6 +14,8 @@ import org.bukkit.entity.Player;
 
 import java.util.*;
 
+import static me.antidotaleks.iter.Iter.tryCatch;
+
 public final class FakePlayer {
     private final GamePlayer playerBase;
     private final List<Player> allPlayersInGame;
@@ -26,19 +28,16 @@ public final class FakePlayer {
 
     public FakePlayer(GamePlayer player) {
         this.playerBase = player;
-        this.allPlayersInGame = player.getGame().getAllPlayers();
+        this.allPlayersInGame = player.getGame().getAllBukkitPlayers();
 
         spawnFakePlayer();
     }
 
     public void spawnFakePlayer() {
-        try {
+        tryCatch(() -> {
             spawnFakePlayer(allPlayersInGame);
             glow(playerBase.getPlayer());
-        } catch (Exception e) {
-            Iter.logger.warning("Error spawning fake player:");
-            e.printStackTrace();
-        }
+        }, "Error spawning fake player");
     }
 
     private void spawnFakePlayer(List<Player> playersToSpawnTo) {
@@ -109,19 +108,16 @@ public final class FakePlayer {
     }
 
     public void teleport(Location newLocation) {
-        try {
+        tryCatch(() -> {
             moveEntity(entityId, newLocation, allPlayersInGame);
-            newLocation = newLocation.clone().add(0, 1.8, 0);
+            Location passengerLocation = newLocation.clone().add(0, 1.8, 0);
             for (int passengerId : passengerIds) {
                 removePassenger(passengerId, allPlayersInGame);
-                Iter.protocolManager.getEntityFromID(Iter.overworld, passengerId).teleport(newLocation);
-                moveEntity(passengerId, newLocation, allPlayersInGame);
+                Iter.protocolManager.getEntityFromID(Iter.overworld, passengerId).teleport(passengerLocation);
+                moveEntity(passengerId, passengerLocation, allPlayersInGame);
                 addPassenger(passengerId, allPlayersInGame);
             }
-        } catch (Exception e) {
-            Iter.logger.warning("Error teleporting fake player:");
-            e.printStackTrace();
-        }
+        }, "Error teleporting fake player");
     }
 
     private void moveEntity(int entityId, Location newLocation, List<Player> playersToShowTeleport) {
@@ -153,12 +149,7 @@ public final class FakePlayer {
     }
 
     public void remove() {
-        try {
-            remove(allPlayersInGame);
-        } catch (Exception e) {
-            Iter.logger.warning("Error removing fake player:");
-            e.printStackTrace();
-        }
+        tryCatch(() -> remove(allPlayersInGame), "Error removing fake player");
     }
 
     private void remove(List<Player> playersToRemoveFrom) {
@@ -233,12 +224,7 @@ public final class FakePlayer {
     private final ArrayList<Integer> passengerIds = new ArrayList<>();
 
     public void addPassenger(Entity entity) {
-        try {
-            addPassenger(entity.getEntityId(), allPlayersInGame);
-        } catch (Exception e) {
-            Iter.logger.warning("Error adding passenger to fake player:");
-            e.printStackTrace();
-        }
+        tryCatch(() -> addPassenger(entity.getEntityId(), allPlayersInGame), "Error adding passenger to fake player");
     }
 
     private void addPassenger(int passengerId, List<Player> playersToAddPassengerTo) {
@@ -261,12 +247,7 @@ public final class FakePlayer {
     }
 
     public void removePassenger(Entity passenger) {
-        try {
-            removePassenger(passenger.getEntityId(), allPlayersInGame);
-        } catch (Exception e) {
-            Iter.logger.warning("Error removing passenger from fake player:");
-            e.printStackTrace();
-        }
+        tryCatch(() -> removePassenger(passenger.getEntityId(), allPlayersInGame), "Error removing passenger from fake player");
     }
 
     private void removePassenger(int passengerId, List<Player> playersToRemovePassengerFrom) {

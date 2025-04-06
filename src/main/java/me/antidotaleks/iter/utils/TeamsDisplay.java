@@ -30,21 +30,16 @@ public final class TeamsDisplay {
         int teamAmount = teamsBukkit.length;
         this.teamAudiences = new Audience[teamAmount];
         this.bossbars = new BossBar[teamAmount];
-        // this.bossbarTexts = new Component[teamAmount][];
-        // this.teamStylings = game.getTeamStylings();
-        this.bossbarTexts = new Component[5][];
-        this.teamStylings = TeamStyling.getColors(5); // TODO: temp
+        this.bossbarTexts = new Component[teamAmount][];
+        this.teamStylings = game.getTeamStylings();
 
         for (int i = 0; i < teamAmount; i++) {
             this.teamAudiences[i] = getTeamAudience(teamsBukkit[i]);
             this.bossbars[i] = BossBar.bossBar(Component.empty(), BossBar.MAX_PROGRESS, BossBar.Color.PINK, BossBar.Overlay.PROGRESS);
-            // this.bossbarTexts[i] = new Component[teamAmount]; // TODO: temp
+            this.bossbarTexts[i] = new Component[teamAmount];
 
             this.bossbars[i].addViewer(this.teamAudiences[i]); // Show the bossbar for current turn
         }
-        for (int i = 0; i < 5; i++) {
-            this.bossbarTexts[i] = new Component[5];
-        } //TODO: temp
 
         setupBossbarTexts();
 
@@ -63,7 +58,6 @@ public final class TeamsDisplay {
         for (int bossbarIndex = 0; bossbarIndex < bossbars.length; bossbarIndex++) {
             BossBar bossbar = bossbars[bossbarIndex];
             int currentTeamPlayIndex = game.currentTeamPlay();
-            int teamsAmount = game.teamAmount();
 
             Component bossbarText = bossbarTexts[bossbarIndex][currentTeamPlayIndex];
 
@@ -81,7 +75,9 @@ public final class TeamsDisplay {
             }
     }
 
-    private static final Style TOPBAR_FONT = Style.empty().font(Key.key("topbar"));
+    private static final Style
+            TOPBAR_FONT = Style.empty().font(Key.key("topbar")),
+            TOPBAR_TURNS_FONT = Style.empty().font(Key.key("topbar_turns"));
     private static final String[]
             TOPBAR_S_TEAM = new String[]{"\uE000", "\uE001", "\uE002"},
             TOPBAR_S_TURNS = new String[]{"\uE003", "\uE004", "\uE005", "\uE006", "\uE007", "\uE008"};
@@ -136,12 +132,16 @@ public final class TeamsDisplay {
             // pointer of this team and spacing
             bossbarText = bossbarText
                     .append(text(TOPBAR_S_TURNS[1], colored_font))
-                    .append(offset(-46*currentTeamShownTo - 24));
+                    .append(offset(-13))
+                    .append(text(inXTurns, TOPBAR_TURNS_FONT)) // Shows how many turns until this team
+                    .append(offset(-46*currentTeamShownTo - 16));
 
 
         } else {
-            final int leftLineLength = currentTeamShownTo - 1,
-            rightLineLength = teamAmount - currentTeamPlaying - 1;
+            final int
+                    leftLineLength = currentTeamShownTo - 1,
+                    betweenSpaceLength = teamAmount - inXTurns - 1,
+                    rightLineLength = teamAmount - currentTeamPlaying - 1;
 
             // Left edge
             bossbarText = bossbarText
@@ -158,7 +158,9 @@ public final class TeamsDisplay {
             // pointers and spacing
             bossbarText = bossbarText
                     .append(text(TOPBAR_S_TURNS[1], colored_font))
-                    .append(offset((teamAmount - inXTurns - 1) * 46 + 20))
+                    .append(offset(-13))
+                    .append(text(inXTurns, TOPBAR_TURNS_FONT)) // Shows how many turns until this team
+                    .append(offset(betweenSpaceLength * 46 + 28))
                     .append(text(TOPBAR_S_TURNS[0], colored_font))
                     .append(offset(-1));
 

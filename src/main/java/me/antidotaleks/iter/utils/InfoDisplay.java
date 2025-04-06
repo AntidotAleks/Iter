@@ -11,7 +11,6 @@ import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
-import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -38,7 +37,6 @@ import static me.antidotaleks.iter.Iter.*;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.translatable;
 import static net.kyori.adventure.text.format.NamedTextColor.BLACK;
-import static net.kyori.adventure.text.format.NamedTextColor.WHITE;
 
 public final class InfoDisplay {
 
@@ -48,13 +46,15 @@ public final class InfoDisplay {
     private final Audience audience;
     private final TeamStyling teamStyling;
 
-    private final TextDisplay infoDisplay;
-    private final TextDisplay fakePlayerInfoDisplay;
+    private final TextDisplay
+            infoDisplay,
+            fakePlayerInfoDisplay;
     private final ItemDisplay cursor;
-    private BossBar bossBar;
     private BukkitRunnable cursorUpdater;
+    private BossBar bossBar;
 
-    private static final String HEALTH_COLOR = "ff5252",
+    private static final String
+            HEALTH_COLOR = "ff5252",
             ENERGY_COLOR = "5297ff";
 
     // Common
@@ -142,6 +142,7 @@ public final class InfoDisplay {
         fakePlayerInfoDisplay.setText(infoString);
     }
 
+    private static final float HEALTH_BAR_MULTIPLIER = 96/182f;
     public void updateTopBar() {
         if (bossBar == null)
             return;
@@ -151,14 +152,14 @@ public final class InfoDisplay {
         int energy = gamePlayer.getEnergy();
         int maxEnergy = gamePlayer.getMaxEnergy();
 
-        Component tempText = text("❤ "+health+"/"+maxHealth)
-                .color(TextColor.color(Integer.parseInt(HEALTH_COLOR, 16)))
-                .append(text(" | ").color(WHITE))
-                .append(text("♦ "+energy+"/"+maxEnergy)
-                        .color(TextColor.color(Integer.parseInt(ENERGY_COLOR, 16))));
+        // Component tempText = text("❤ "+health+"/"+maxHealth)
+        //         .color(TextColor.color(Integer.parseInt(HEALTH_COLOR, 16)))
+        //         .append(text(" | ").color(WHITE))
+        //         .append(text("♦ "+energy+"/"+maxEnergy)
+        //                 .color(TextColor.color(Integer.parseInt(ENERGY_COLOR, 16))));
+        // bossBar.name(tempText);
 
-        bossBar.name(tempText);
-        bossBar.progress((float) health / maxHealth);
+        bossBar.progress((float) health / maxHealth * HEALTH_BAR_MULTIPLIER);
     }
 
     // Card UI
@@ -170,7 +171,7 @@ public final class InfoDisplay {
     public void changeSelectedCard() {
         int index = gamePlayer.getCurrentItemIndex();
         if (cards.isEmpty())
-            updateInventory();
+            return;
         cardListToShow = cards.get(index).getKey();
         cardListToShow = addCardBlocks(cardListToShow, index);
         audience.sendActionBar(cardListToShow);
@@ -259,10 +260,7 @@ public final class InfoDisplay {
 
     public void hideCursor() {
         player.hideEntity(Iter.plugin, cursor);
-        try {
-            cursorUpdater.cancel();
-        } catch (Exception ignored) {}
-        ;
+        tryIgnored(() -> cursorUpdater.cancel());
     }
 
     public Component cardList(int activeIndex) {
@@ -279,7 +277,7 @@ public final class InfoDisplay {
         updateTopBar();
     }
 
-    public void removeTopBar() {
+    private void removeTopBar() {
         if (bossBar == null)
             return;
 
@@ -297,6 +295,8 @@ public final class InfoDisplay {
             sidebar.close();
         if (cardUpdater != null)
             cardUpdater.cancel();
+        if (bossBar != null)
+            bossBar.removeViewer(audience);
         player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent());
 
         try {

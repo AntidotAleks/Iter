@@ -29,8 +29,10 @@ import org.bukkit.util.RayTraceResult;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.*;
+import java.util.Map;
 
 public final class GamePlayer implements Listener {
 
@@ -85,12 +87,12 @@ public final class GamePlayer implements Listener {
     }
 
     private void giveStartItems() {
-        addItemInner(new ItemWalk(this));
-        addItemInner(new ItemSwiftStep(this));
-        addItemInner(new ItemBasePunch(this));
-        addItemInner(new Test1(this));
-        addItemInner(new TestItemWalkBlocker(this));
-        addItemInner(new Test3(this));
+        addItemUpdateless(new ItemWalk(this));
+        addItemUpdateless(new ItemSwiftStep(this));
+        addItemUpdateless(new ItemBasePunch(this));
+        addItemUpdateless(new Test1(this));
+        addItemUpdateless(new TestItemWalkBlocker(this));
+        addItemUpdateless(new Test3(this));
 
         updateItemBlocks();
         infoDisplay.updateInventory();
@@ -288,14 +290,14 @@ public final class GamePlayer implements Listener {
         passengers.forEach(player::addPassenger);
     }
 
-    private void addItemInner(GameItem item) {
+    private void addItemUpdateless(GameItem item) {
         items.add(new Pair<>(item, false));
     }
 
     // Getters/Setters
 
     public void addItem(GameItem item) {
-        addItemInner(item);
+        addItemUpdateless(item);
         updateItemBlocks();
         infoDisplay.updateInventory();
     }

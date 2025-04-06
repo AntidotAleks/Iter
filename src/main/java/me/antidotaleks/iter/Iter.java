@@ -17,6 +17,8 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 import java.util.logging.Logger;
 
 public final class Iter extends JavaPlugin {
@@ -76,6 +78,56 @@ public final class Iter extends JavaPlugin {
 
     public static final BlockData AIR_DATA = Bukkit.createBlockData(Material.AIR);
     public static final BlockData BARRIER_DATA = Bukkit.createBlockData(Material.BARRIER);
+
+    // Utils
+
+    public static void tryIgnored(Runnable runnable) {
+        try {
+            runnable.run();
+        } catch (Exception ignored) {}
+    }
+
+    public static void tryCatch(Runnable runnable) {
+        tryCatch(runnable, (String) null);
+    }
+
+    public static void tryCatch(Runnable runnable, String errorMessage) {
+        try {
+            runnable.run();
+        } catch (Exception e) {
+
+            if (errorMessage != null)
+                logger.warning(errorMessage+": " + e.getMessage());
+            else
+                logger.warning("An error occurred: " + e.getMessage());
+
+            for (StackTraceElement element : e.getStackTrace())
+                logger.warning("\t" + element);
+        }
+    }
+
+    public static void tryCatch(Runnable runnable, Consumer<Throwable> onException) {
+        try {
+            runnable.run();
+        } catch (Throwable e) {
+            if (onException != null)
+                onException.accept(e);
+            else
+                logger.warning("An error occurred: " + e.getMessage());
+        }
+    }
+
+    public static <T> T tryCatch(Callable<T> callable, T defaultValue) {
+        try {
+            return callable.call();
+        } catch (Exception e) {
+            logger.warning("An error occurred: " + e.getMessage());
+            for (StackTraceElement element : e.getStackTrace())
+                logger.warning("\t" + element);
+            return defaultValue;
+        }
+    }
+
 
     // Font utils
 
