@@ -53,7 +53,7 @@ public class MegaCannon extends MovementCooldownGameItem implements Conditional 
 
     @Override
     public String getName() {
-        return "Mega Cannon/";
+        return "Mega Cannon";
     }
 
     @Override
