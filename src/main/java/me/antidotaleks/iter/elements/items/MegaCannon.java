@@ -3,44 +3,57 @@ package me.antidotaleks.iter.elements.items;
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.utils.items.GameItem;
-import me.antidotaleks.iter.utils.items.specific.CooldownGameItem;
+import me.antidotaleks.iter.utils.items.specific.MovementCooldownGameItem;
 import me.antidotaleks.iter.utils.items.specific.MovementGameItem;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 
-public class TestItemWalkBlocker extends CooldownGameItem implements Conditional {
+public class MegaCannon extends MovementCooldownGameItem implements Conditional {
     /**
      * Item that allows the player to walk
      * @param player the player that owns the item
      */
-    public TestItemWalkBlocker(GamePlayer player) {
+    public MegaCannon(GamePlayer player) {
         super(player);
     }
 
     @Override
     public int getEnergyUsage() {
-        return 1;
-    }
-
-    @Override
-    public int getMaxCooldown() {
         return 2;
     }
 
     @Override
+    public int getMaxCooldown() {
+        return 3;
+    }
+
+    @Override
     public boolean usable(@NotNull Point coords) {
-        return true;
+        // Walkable distance is 1 tile
+        if(tilesAwayTaxi(getCurrentPosition(), coords) != 1)
+            return false;
+
+        if (!TargetSelector.ENEMY.canUseAt(coords, player))
+            return false;
+
+        Point playerBack = player.getPosition();
+        playerBack.translate(playerBack.x-coords.x, playerBack.y-coords.y);
+
+        return super.usable(playerBack);
     }
 
     @Override
     public void use(Point coords) {
+        GamePlayer playerHit = player.getGame().getPlayer(coords);
+        playerHit.damage(4+player.getFlatDamage());
 
+        super.use(coords);
     }
 
     @Override
     public String getName() {
-        return "Test Item Walk Blocker/d";
+        return "Mega Cannon/";
     }
 
     @Override

@@ -23,7 +23,7 @@ public class ItemWalk extends MovementGameItem {
     @Override
     public boolean usable(@NotNull Point coords) {
         // Walkable distance is 1 tile
-        if(tilesAway(getCurrentPosition(), coords) != 1)
+        if(tilesAwayTaxi(getCurrentPosition(), coords) != 1)
             return false;
 
         return super.usable(coords);

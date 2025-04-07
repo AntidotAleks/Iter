@@ -24,17 +24,15 @@ public class ItemBasePunch extends GameItem {
 
     @Override
     public boolean usable(@NotNull Point coords) {
-        if (tilesAway(getCurrentPosition(), coords) != 1)
+        if (tilesAwayTaxi(getCurrentPosition(), coords) != 1)
             return false;
-        return TargetSelector.ENEMY.isAcceptable(coords, player);
+        return TargetSelector.ENEMY.canUseAt(coords, player);
     }
 
     @Override
     public void use(Point coords) {
         GamePlayer playerHit = player.getGame().getPlayer(coords);
-
         playerHit.damage(1+player.getFlatDamage());
-        playerHit.updateInfo();
 
         particles(player.getPosition(), coords);
     }

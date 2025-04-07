@@ -34,6 +34,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static me.antidotaleks.iter.Iter.tryCatch;
+
 public final class GamePlayer implements Listener {
 
     // Player
@@ -75,7 +77,7 @@ public final class GamePlayer implements Listener {
         fakePlayer = new FakePlayer(this);
         infoDisplay = new InfoDisplay(this);
 
-        giveStartItems();
+        tryCatch(this::giveStartItems);
 
         // Setup
 
@@ -91,7 +93,7 @@ public final class GamePlayer implements Listener {
         addItemUpdateless(new ItemSwiftStep(this));
         addItemUpdateless(new ItemBasePunch(this));
         addItemUpdateless(new Test1(this));
-        addItemUpdateless(new TestItemWalkBlocker(this));
+        addItemUpdateless(new MegaCannon(this));
         addItemUpdateless(new Test3(this));
 
         updateItemBlocks();
@@ -303,7 +305,7 @@ public final class GamePlayer implements Listener {
     }
 
     public Point getPosition() {
-        return pos;
+        return (Point) pos.clone();
     }
 
     public void setPosition(Point pos) {

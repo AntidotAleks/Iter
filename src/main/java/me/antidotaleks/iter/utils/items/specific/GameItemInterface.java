@@ -14,7 +14,7 @@ public interface GameItemInterface {
      * @param coords the coordinates to check
      * @return {@code true} if the item can be used at the given coordinates, otherwise {@code false}
      * @see #getEnergyUsage()
-     * @see GameItem.TargetSelector#isAcceptable(Point, GamePlayer)
+     * @see GameItem.TargetSelector#canUseAt(Point, GamePlayer)
      */
     boolean usable(@NotNull Point coords);
 

@@ -38,8 +38,18 @@ public abstract class GameItem implements GameItemInterface {
         return '\uE000';
     }
 
-    protected static int tilesAway(Point coords1, Point coords2) {
+    /**
+     * @return dx+dy
+     */
+    protected static int tilesAwayTaxi(Point coords1, Point coords2) {
         return Math.abs(coords1.x-coords2.x) + Math.abs(coords1.y-coords2.y);
+    }
+
+    /**
+     * @return dx^2+dy^2
+     */
+    protected static float tilesAwayEuclidean(Point coords1, Point coords2) {
+        return (float) Math.sqrt(Math.pow(coords1.x-coords2.x, 2) + Math.pow(coords1.y-coords2.y, 2));
     }
 
     public enum TargetSelector {
@@ -53,7 +63,8 @@ public abstract class GameItem implements GameItemInterface {
         GROUND_OR_ALLY(false, true, false, true),
         GROUND_OR_ALLY_OR_SELF(true, true, false, true),
         GROUND_OR_ENEMY(false, false, true, true),
-        GROUND_OR_ANYONE(true, true, true, true);
+        GROUND_OR_ANYONE(true, true, true, true),
+        EMPTY_GROUND(false, false, false, true),;
 
         private final boolean self;
         private final boolean ally;
@@ -67,23 +78,10 @@ public abstract class GameItem implements GameItemInterface {
             this.ground = ground;
         }
 
-        public boolean isSelf() {
-            return self;
-        }
+        public boolean canUseAt(Point coords, GamePlayer playerUsing) {
+            if (this == EMPTY_GROUND)
+                return isEmptyGround(coords, playerUsing);
 
-        public boolean isAlly() {
-            return ally;
-        }
-
-        public boolean isEnemy() {
-            return enemy;
-        }
-
-        public boolean isGround() {
-            return ground;
-        }
-
-        public boolean isAcceptable(Point coords, GamePlayer playerUsing) {
             if (ground)
                 return true;
 
@@ -99,8 +97,8 @@ public abstract class GameItem implements GameItemInterface {
             else return enemy && !Arrays.asList(target.getTeam()).contains(playerUsing);
         }
 
-        public static boolean isEmptyGround(Point coords, GamePlayer player) {
-            return GROUND.isAcceptable(coords, player) && player.getGame().getPlayer(coords) == null;
+        private static boolean isEmptyGround(Point coords, GamePlayer player) {
+            return GROUND.canUseAt(coords, player) && !ANYONE.canUseAt(coords, player);
         }
     }
 }

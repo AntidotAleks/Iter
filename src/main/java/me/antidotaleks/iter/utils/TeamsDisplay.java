@@ -11,8 +11,7 @@ import org.bukkit.entity.Player;
 
 import java.util.Arrays;
 
-import static me.antidotaleks.iter.Iter.MONO_OFFSET_FONTS;
-import static me.antidotaleks.iter.Iter.offset;
+import static me.antidotaleks.iter.Iter.*;
 import static net.kyori.adventure.text.Component.text;
 
 public final class TeamsDisplay {
@@ -195,10 +194,12 @@ public final class TeamsDisplay {
     }
 
     public void remove() {
-        for (int i = 0; i < bossbars.length; i++) {
-            BossBar bossBar = bossbars[i];
-            bossBar.removeViewer(teamAudiences[i]);
-            bossbars[i] = null;
-        }
+        tryCatch(() -> {
+            for (int i = 0; i < bossbars.length; i++) {
+                BossBar bossBar = bossbars[i];
+                bossBar.removeViewer(teamAudiences[i]);
+                bossbars[i] = null;
+            }
+        });
     }
 }

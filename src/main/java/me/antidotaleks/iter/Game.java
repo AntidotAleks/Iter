@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static me.antidotaleks.iter.Iter.tryCatch;
+
 public class Game implements Listener {
     // Teams
     private final GamePlayer[][] teams;
@@ -117,7 +119,7 @@ public class Game implements Listener {
         for (GamePlayer[] team : teams) {
             for (GamePlayer player : team) {
                 HandlerList.unregisterAll(player);
-                player.stop();
+                tryCatch(player::stop);
             }
         }
 
