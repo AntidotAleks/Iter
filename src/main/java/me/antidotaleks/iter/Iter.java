@@ -117,7 +117,11 @@ public final class Iter extends JavaPlugin {
         }
     }
 
-    public static <T> T tryCatch(Callable<T> callable, T defaultValue) {
+    public static <T> T tryCatchReturn(Callable<T> callable) {
+        return tryCatchReturn(callable, null);
+    }
+
+    public static <T> T tryCatchReturn(Callable<T> callable, T defaultValue) {
         try {
             return callable.call();
         } catch (Exception e) {

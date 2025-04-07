@@ -60,6 +60,9 @@ public final class InfoDisplay {
     // Common
 
     public InfoDisplay(GamePlayer player) {
+        if (player == null)
+            throw new IllegalArgumentException("Player cannot be null");
+
         this.gamePlayer = player;
         this.fakePlayer = player.getFakePlayer();
         this.player = player.getPlayer();
@@ -67,10 +70,9 @@ public final class InfoDisplay {
         this.teamStyling = gamePlayer.getTeamStyling();
 
         // Create displays
-        infoDisplay = newAbovePlayerInfoDisplay(true);
-        fakePlayerInfoDisplay = newAbovePlayerInfoDisplay(false);
-
-        cursor = newCursor();
+        infoDisplay = Iter.tryCatchReturn(() -> newAbovePlayerInfoDisplay(true));
+        fakePlayerInfoDisplay = Iter.tryCatchReturn(() -> newAbovePlayerInfoDisplay(false));
+        cursor = Iter.tryCatchReturn(this::newCursor);
 
         update();
     }
@@ -122,9 +124,9 @@ public final class InfoDisplay {
     // Display
 
     public void update() {
-        updateInfoDisplays();
-        updateTopBar();
-        changeSelectedCard();
+        tryCatch(this::updateInfoDisplays);
+        tryCatch(this::updateTopBar);
+        tryCatch(this::changeSelectedCard);
     }
 
     public void updateInfoDisplays() {
