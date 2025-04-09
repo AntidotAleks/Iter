@@ -6,12 +6,12 @@ import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 
-public class Test1 extends CooldownGameItem {
+public class UnusableItemTestForUI extends CooldownGameItem {
     /**
      * Item that allows the player to walk
      * @param player the player that owns the item
      */
-    public Test1(GamePlayer player) {
+    public UnusableItemTestForUI(GamePlayer player) {
         super(player);
     }
 

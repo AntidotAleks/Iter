@@ -93,9 +93,9 @@ public final class GamePlayer implements Listener {
         addItemUpdateless(new ItemWalk(this));
         addItemUpdateless(new ItemSwiftStep(this));
         addItemUpdateless(new ItemBasePunch(this));
-        addItemUpdateless(new Test1(this));
+        addItemUpdateless(new UnusableItemTestForUI(this));
         addItemUpdateless(new MegaCannon(this));
-        addItemUpdateless(new Test3(this));
+        addItemUpdateless(new FreeWalkingItemTest(this));
 
         updateItemBlocks();
         infoDisplay.updateInventory();
