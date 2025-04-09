@@ -29,18 +29,18 @@ public class MegaCannon extends MovementCooldownGameItem implements Conditional 
     }
 
     @Override
-    public boolean usable(@NotNull Point coords) {
+    public boolean usable(@NotNull Point coords, int step) {
         // Walkable distance is 1 tile
         if(tilesAwayTaxi(getCurrentPosition(), coords) != 1)
             return false;
 
-        if (!TargetSelector.ENEMY.canUseAt(coords, player))
+        if (!TargetSelector.ENEMY.canUseAt(coords, player, step))
             return false;
 
         Point playerBack = player.getPosition();
         playerBack.translate(playerBack.x-coords.x, playerBack.y-coords.y);
 
-        return super.usable(playerBack);
+        return super.usable(playerBack, step);
     }
 
     @Override

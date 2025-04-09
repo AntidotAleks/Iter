@@ -20,7 +20,7 @@ public class Test3 extends ItemWalk implements Conditional {
 
     @Override
     public String getName() {
-        return "Test3";
+        return "Free Walk Test Item No Blocks";
     }
 
     @Override

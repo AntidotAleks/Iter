@@ -12,6 +12,7 @@ import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.utils.items.GameItem;
 import me.antidotaleks.iter.utils.items.PreUsed;
+import me.antidotaleks.iter.utils.items.specific.MovementGameItem;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -228,7 +229,7 @@ public final class GamePlayer implements Listener {
 
         if (itemBlockPair.getSecond()) // if blocked
             return;
-        if (!item.usable(tilePos)) // if not usable on this tile
+        if (!item.usable(tilePos, itemsUsed.size()+1)) // if not usable on this tile
             return;
         if (!useEnergy(item.getEnergyUsage())) // if not enough energy
             return;
@@ -306,6 +307,30 @@ public final class GamePlayer implements Listener {
 
     public Point getPosition() {
         return (Point) pos.clone();
+    }
+
+    public Point getPositionAtStep(int step) {
+        if (step <= 0)
+            return getPosition();
+
+        ArrayList<Integer> stepList = getStepList(itemsUsed);
+
+        // If player haven't used "step" amount of cards, get their last position
+        if (stepList.size() <= step)
+            return (Point) nextStep.get(stepList.getLast()).clone();
+
+        // Returns player's position at given step
+        return (Point) nextStep.get(stepList.get(step)).clone();
+    }
+
+    private static ArrayList<Integer> getStepList(List<Map.Entry<GameItem, Point>> uses) {
+        // Each value = previous value + 1 if current GameItem is ItemWalk
+        ArrayList<Integer> steps = new ArrayList<>();
+        steps.add(0);
+        for (Map.Entry<GameItem, Point> use : uses)
+            steps.add(steps.getLast() + (use.getKey() instanceof MovementGameItem ? 1 : 0));
+
+        return steps;
     }
 
     public void setPosition(Point pos) {

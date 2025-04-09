@@ -23,10 +23,10 @@ public class ItemBasePunch extends GameItem {
     }
 
     @Override
-    public boolean usable(@NotNull Point coords) {
+    public boolean usable(@NotNull Point coords, int step) {
         if (tilesAwayTaxi(getCurrentPosition(), coords) != 1)
             return false;
-        return TargetSelector.ENEMY.canUseAt(coords, player);
+        return TargetSelector.ENEMY.canUseAt(coords, player, step);
     }
 
     @Override

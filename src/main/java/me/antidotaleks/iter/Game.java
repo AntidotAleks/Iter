@@ -5,6 +5,7 @@ import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.maps.Map;
 import me.antidotaleks.iter.utils.TeamStyling;
 import me.antidotaleks.iter.utils.TeamsDisplay;
+import me.antidotaleks.iter.utils.items.GameItem;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -234,10 +235,34 @@ public class Game implements Listener {
                 .orElse(null);
     }
 
+    /**
+     * Use in {@link GameItem#use(Point)}
+     * @param coords coordinates, where the item was used
+     * @return player at given position
+     */
     public GamePlayer getPlayer(Point coords) {
         for (GamePlayer[] team : teams) {
             for (GamePlayer player : team) {
                 if (player.getPosition().equals(coords))
+                    return player;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Use in {@link GameItem#usable(Point, int)}
+     * @param coords coordinates, where the item was used
+     * @param step ordinal player's item use
+     * @return player at given position in specific time (step)
+     */
+    public GamePlayer getPlayer(Point coords, int step) {
+        if (step <= 0)
+            return getPlayer(coords);
+
+        for (GamePlayer[] team : teams) {
+            for (GamePlayer player : team) {
+                if (player.getPositionAtStep(step).equals(coords))
                     return player;
             }
         }

@@ -6,10 +6,6 @@ import me.antidotaleks.iter.utils.items.PreUsed;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 
 public abstract class MovementGameItem extends GameItem implements PreUsed {
     /**
@@ -29,46 +25,8 @@ public abstract class MovementGameItem extends GameItem implements PreUsed {
      * @return {@code true} if the player can use the item at the given coordinates, otherwise {@code false}
      */
     @Override
-    public boolean usable(@NotNull Point coords) {
-        // Check if the player is not overlapping with players from other teams
-        if (!isWalkable(coords))
-            return false;
-
-        // Check if the player is not overlapping with players in the same team at the same step at given coordinates
-        int step = player.getItemsUsed().size();
-
-        for (GamePlayer teammate : player.getTeam()) {
-            if (teammate == player)
-                continue;
-
-            List<Map.Entry<GameItem, Point>> teammateItemsUsed = teammate.getItemsUsed();
-            ArrayList<Integer> steps = getStepList(teammateItemsUsed);
-            int teammateStep = steps.getLast();
-
-            if (teammateStep >= step)
-                teammateStep = steps.get(step);
-
-            if (teammate.getStepPlanning().get(teammateStep).equals(coords))
-                return false;
-        }
-
-        // If no player is overlapping, return true
-        return true;
-    }
-
-    protected boolean isWalkable(Point coords) {
-        GamePlayer other = player.getGame().getPlayer(coords);
-        return other == null || Arrays.stream(player.getTeam()).anyMatch(p -> p == other);
-    }
-
-    protected ArrayList<Integer> getStepList(List<Map.Entry<GameItem, Point>> uses) {
-        // Each value = previous value + 1 if current GameItem is ItemWalk
-        ArrayList<Integer> steps = new ArrayList<>();
-        steps.add(0);
-        for (Map.Entry<GameItem, Point> use : uses)
-            steps.add(steps.getLast() + (use.getKey() instanceof MovementGameItem ? 1 : 0));
-
-        return steps;
+    public boolean usable(@NotNull Point coords, int step) {
+        return TargetSelector.EMPTY_GROUND.canUseAt(coords, player, step);
     }
 
 

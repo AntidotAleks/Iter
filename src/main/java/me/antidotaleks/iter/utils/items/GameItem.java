@@ -78,14 +78,14 @@ public abstract class GameItem implements GameItemInterface {
             this.ground = ground;
         }
 
-        public boolean canUseAt(Point coords, GamePlayer playerUsing) {
+        public boolean canUseAt(Point coords, GamePlayer playerUsing, int step) {
             if (this == EMPTY_GROUND)
-                return isEmptyGround(coords, playerUsing);
+                return isEmptyGround(coords, playerUsing, step);
 
             if (ground)
                 return true;
 
-            GamePlayer target = playerUsing.getGame().getPlayer(coords);
+            GamePlayer target = playerUsing.getGame().getPlayer(coords, step);
 
             if (target == null)
                 return false;
@@ -97,8 +97,8 @@ public abstract class GameItem implements GameItemInterface {
             else return enemy && !Arrays.asList(target.getTeam()).contains(playerUsing);
         }
 
-        private static boolean isEmptyGround(Point coords, GamePlayer player) {
-            return GROUND.canUseAt(coords, player) && !ANYONE.canUseAt(coords, player);
+        private static boolean isEmptyGround(Point coords, GamePlayer player, int step) {
+            return GROUND.canUseAt(coords, player, step) && !ANYONE.canUseAt(coords, player, step);
         }
     }
 }

@@ -26,12 +26,12 @@ public class ItemSwiftStep extends MovementCooldownGameItem {
     }
 
     @Override
-    public boolean usable(@NotNull Point coords) {
+    public boolean usable(@NotNull Point coords, int step) {
         // Walkable distance is 1 tile
         if(tilesAwayTaxi(getCurrentPosition(), coords) != 1)
             return false;
 
-        return super.usable(coords);
+        return super.usable(coords, step);
     }
 
     @Override

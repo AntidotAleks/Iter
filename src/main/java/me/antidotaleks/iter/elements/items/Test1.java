@@ -26,7 +26,7 @@ public class Test1 extends CooldownGameItem {
     }
 
     @Override
-    public boolean usable(@NotNull Point coords) {
+    public boolean usable(@NotNull Point coords, int step) {
         return false;
     }
 
