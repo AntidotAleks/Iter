@@ -44,4 +44,9 @@ public abstract class MovementGameItem extends GameItem implements PreUsed {
         player.setPosition(player.nextStep.getFirst());
         player.nextStep.removeFirst();
     }
+
+    @Override
+    public int priority() {
+        return -1; // Movement items should be used after all other items, in case teammate want's to use ally-target item
+    }
 }

@@ -5,7 +5,6 @@ import me.antidotaleks.iter.elements.GameTeam;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.maps.Map;
 import me.antidotaleks.iter.utils.TeamStyling;
-import me.antidotaleks.iter.utils.TeamDisplay;
 import me.antidotaleks.iter.utils.items.GameItem;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -22,12 +21,12 @@ import java.util.List;
 import java.util.*;
 
 import static me.antidotaleks.iter.Iter.tryCatch;
+import static me.antidotaleks.iter.Iter.tryIgnored;
 
 public class Game implements Listener {
     // Teams
     private final List<GameTeam> teams = new ArrayList<>();
     private final TeamStyling[] teamStylings;
-    private TeamDisplay teamDisplay;
     // Turns
     private int currentTeamPlayIndex = 0;
     private final int[] teamPlayOrder;
@@ -102,7 +101,7 @@ public class Game implements Listener {
 
     public void stopGame() {
         map.removeMap(mapLocation);
-        teamDisplay.remove();
+        teams.forEach(GameTeam::removeTeamDisplay);
 
         teams.forEach(team -> {
             team.forEachPlayer(player -> {
@@ -117,7 +116,7 @@ public class Game implements Listener {
     }
 
     private void roundStart() {
-        teamDisplay.updateBossbar();
+        teams.forEach(GameTeam::updateTeamDisplay);
         getAllBukkitPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStylings[currentTeamPlayIndex()].toString() +" turn", 5, 35, 5));
 
         GameTeam nextTeam = teams.get(currentTeamPlayIndex);
@@ -129,19 +128,58 @@ public class Game implements Listener {
         GameTeam team = teams.get(currentTeamPlayIndex);
 
         new BukkitRunnable() { @Override public void run() {
-            final boolean[] allItemsUsed = {true};
-            team.forEachPlayer(player -> {
-                allItemsUsed[0] = !player.useNextItem() && allItemsUsed[0];
-                // Becomes false if at least 1 player had an item to use
-            });
-            teamDisplay.updateBossbar();
-            getAllGamePlayers().forEach(GamePlayer::updateInfo);
 
-            if(allItemsUsed[0]) {
+            // Separate by item priority
+
+            java.util.Map<Integer, List<GamePlayer>> groupedByPriority = new HashMap<>();
+
+            for (GamePlayer player : team.getPlayers()) {
+                int priority = player.getNextItemPriority();
+                if (priority == Integer.MIN_VALUE) continue;
+
+                groupedByPriority
+                        .computeIfAbsent(priority, k -> new ArrayList<>())
+                        .add(player);
+            }
+
+            // If no players have items to use, end the round
+
+            if(groupedByPriority.isEmpty()) {
                 cancel();
                 roundEnd();
+                return;
             }
-        }}.runTaskTimer(Iter.plugin, 0, 10);
+
+            // Use items in order of priority
+
+            List<List<GamePlayer>> playerUseOrdered = groupedByPriority.entrySet().stream().sorted((a, b) -> b.getKey() - a.getKey()).map(java.util.Map.Entry::getValue).toList();
+            tryIgnored(() -> useItemsOfCurrentStep(playerUseOrdered));
+
+        }}.runTaskLater(Iter.plugin, 5); // Ass spaghetti code
+    }
+
+    private void useItemsOfCurrentStep(List<List<GamePlayer>> playerUseOrdered) {
+        if(playerUseOrdered.isEmpty())
+            throw new IllegalStateException("No players to use items");
+
+        int useTime = -1;
+        for (GamePlayer player : playerUseOrdered.getFirst()) {
+            useTime = Math.max(player.useNextItem(), useTime);
+        }
+        playerUseOrdered.removeFirst();
+        // Update info for all players
+        teams.forEach(GameTeam::updateTeamDisplay);
+        getAllGamePlayers().forEach(GamePlayer::updateInfo);
+
+        if (useTime == -1) {
+            roundFinishing();
+            return;
+        }
+
+        // Use items in order of priority after item's use time (aka animation delay)
+        new BukkitRunnable() { @Override public void run() {
+            useItemsOfCurrentStep(playerUseOrdered);
+        }}.runTaskLater(Iter.plugin, useTime);
     }
 
     private void roundEnd() {

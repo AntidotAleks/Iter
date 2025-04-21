@@ -39,6 +39,24 @@ public abstract class GameItem implements GameItemInterface {
     }
 
     /**
+     * item priority over other items, higher priority means it will be used first, needed so that movement items are used after all other items, so that ally-target items can be used on a given step <br>
+     * items with the same priority will are used at the same time and in random order. Items with lower priority will be used after items with higher priority. <br>
+     * Default value is 0, movement items generally have priority -1, buffing (heal, damage increase, etc.) ally-target items have priority 1
+     * @return priority of the item as an integer
+     */
+    public int priority() {
+        return 0;
+    }
+
+    /**
+     * time of the animation of the item in ticks, for a cosmetic delay
+     * @return time of the animation in ticks
+     */
+    public int useTime() {
+        return 5;
+    }
+
+    /**
      * @return dx+dy
      */
     protected static int tilesAwayTaxi(Point coords1, Point coords2) {

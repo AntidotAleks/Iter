@@ -206,9 +206,20 @@ public final class GamePlayer implements Listener {
         fakePlayer.remove();
     }
 
-    public boolean useNextItem() {
+    public int getNextItemPriority() {
         if (itemsUsed.isEmpty())
-            return false;
+            return Integer.MIN_VALUE;
+
+        return itemsUsed.getFirst().getKey().priority();
+    }
+
+    /**
+     * Uses the next item in the queue. If there is no item to use, returns -1.
+     * @return time of the item used
+     */
+    public int useNextItem() {
+        if (itemsUsed.isEmpty())
+            return -1;
 
         GameItem item = itemsUsed.getFirst().getKey();
         item.use(itemsUsed.getFirst().getValue());
@@ -216,7 +227,7 @@ public final class GamePlayer implements Listener {
 
         itemsUsed.removeFirst();
 
-        return true;
+        return item.useTime();
     }
 
     private void interact() {

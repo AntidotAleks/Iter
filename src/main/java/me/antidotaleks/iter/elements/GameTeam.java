@@ -30,13 +30,6 @@ public class GameTeam {
         playersBukkitArray = playersBukkit.stream().toList();
     }
 
-    public void createTeamDisplay() {
-        if (teamDisplay != null)
-            return;
-
-        teamDisplay = new TeamDisplay(this);
-    }
-
     // Utils
 
     public int getTeamHealthSum() {
@@ -79,5 +72,23 @@ public class GameTeam {
 
     public Game getGame() {
         return game;
+    }
+
+    // Team display
+
+    public void createTeamDisplay() {
+        if (teamDisplay != null)
+            return;
+
+        teamDisplay = new TeamDisplay(this);
+    }
+
+    public void updateTeamDisplay() {
+        teamDisplay.updateBossbar();
+    }
+
+    public void removeTeamDisplay() {
+        teamDisplay.remove();
+        teamDisplay = null;
     }
 }
