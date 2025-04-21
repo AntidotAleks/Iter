@@ -285,6 +285,10 @@ public final class GamePlayer implements Listener {
         infoDisplay.changeSelectedCard();
     }
 
+    /**
+     * Teleports actual player to given location. For in-game player movement use {@link #setPosition(Point)}
+     * @param loc world location
+     */
     public void teleport(Location loc) {
         List<Entity> passengers = player.getPassengers();
         passengers.forEach(player::removePassenger);
@@ -333,6 +337,11 @@ public final class GamePlayer implements Listener {
         return steps;
     }
 
+    /**
+     * Moves in-game player position to a given point including linked {@link FakePlayer}.
+     * For teleporting actual player use {@link #teleport(Location)}
+     * @param pos point on a {@link Game} map
+     */
     public void setPosition(Point pos) {
         this.pos.setLocation(pos);
         fakePlayer.teleport(getWorldPosition());
@@ -440,7 +449,7 @@ public final class GamePlayer implements Listener {
         return game;
     }
 
-    public GamePlayer[] getTeam() {
+    public GameTeam getTeam() {
         return game.getTeam(player);
     }
 

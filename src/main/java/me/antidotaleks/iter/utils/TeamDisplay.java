@@ -2,6 +2,7 @@ package me.antidotaleks.iter.utils;
 
 import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
+import me.antidotaleks.iter.elements.GameTeam;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.key.Key;
@@ -9,69 +10,59 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
 import org.bukkit.entity.Player;
 
-import java.util.Arrays;
+import java.util.List;
 
 import static me.antidotaleks.iter.Iter.*;
 import static net.kyori.adventure.text.Component.text;
 
-public final class TeamsDisplay {
+public final class TeamDisplay {
 
+    private final GameTeam team;
     private final Game game;
-    private final Audience[] teamAudiences;
-    private final BossBar[] bossbars;
-    private final Component[][] bossbarTexts;
+    private final Audience teamAudience;
+    private final BossBar bossbar;
+    private final Component[] baseBossbarTexts;
     private final TeamStyling[] teamStylings;
 
-    public TeamsDisplay(Game game) {
-        this.game = game;
+    public TeamDisplay(GameTeam team) {
+        this.team = team;
+        this.game = team.getGame();
 
-        Player[][] teamsBukkit = game.getTeamsBukkit();
-        int teamAmount = teamsBukkit.length;
-        this.teamAudiences = new Audience[teamAmount];
-        this.bossbars = new BossBar[teamAmount];
-        this.bossbarTexts = new Component[teamAmount][];
         this.teamStylings = game.getTeamStylings();
 
-        for (int i = 0; i < teamAmount; i++) {
-            this.teamAudiences[i] = getTeamAudience(teamsBukkit[i]);
-            this.bossbars[i] = BossBar.bossBar(Component.empty(), BossBar.MAX_PROGRESS, BossBar.Color.PINK, BossBar.Overlay.PROGRESS);
-            this.bossbarTexts[i] = new Component[teamAmount];
+        this.teamAudience = getTeamAudience(team.getPlayersBukkit());
+        this.bossbar = BossBar.bossBar(Component.empty(), BossBar.MAX_PROGRESS, BossBar.Color.PINK, BossBar.Overlay.PROGRESS);
+        this.baseBossbarTexts = new Component[game.getTeamsAmount()];
 
-            this.bossbars[i].addViewer(this.teamAudiences[i]); // Show the bossbar for current turn
-        }
+        this.bossbar.addViewer(this.teamAudience); // Show the bossbar for current turn
 
-        setupBossbarTexts();
+        createBaseBossbarTexts();
 
-        game.getAllGamePlayers().forEach(player -> player.getInfoDisplay().showTopBars());
+        team.forEachPlayer(player -> player.getInfoDisplay().showTopBars());
     }
 
     // Utils
 
-    private Audience getTeamAudience(Player[] players) {
+    private Audience getTeamAudience(List<Player> players) {
         return Audience.audience(
-                Arrays.stream(players).map(Iter.audiences::player).toList()
+                players.stream().map(Iter.audiences::player).toList()
         );
     }
 
-    public void updateBossbars() {
-        for (int bossbarIndex = 0; bossbarIndex < bossbars.length; bossbarIndex++) {
-            BossBar bossbar = bossbars[bossbarIndex];
-            int currentTeamPlayIndex = game.currentTeamPlay();
-
-            Component bossbarText = bossbarTexts[bossbarIndex][currentTeamPlayIndex];
-
-            updateBossbarText(bossbar, bossbarText);
-        }
+    public void updateBossbar() {
+        int currentTeamPlayIndex = game.currentTeamPlayIndex();
+        Component baseBossbarText = baseBossbarTexts[currentTeamPlayIndex];
+        updateBossbarText(bossbar, baseBossbarText);
     }
 
-    private void setupBossbarTexts() {
-        int teamAmount = teamStylings.length;
-
-        for (int currentTurn = 0; currentTurn < teamAmount; currentTurn++)
-            for (int currentTeamIndex = 0; currentTeamIndex < teamAmount; currentTeamIndex++) {
-                bossbarTexts[currentTeamIndex][currentTurn] =
-                        getBossbarText(currentTurn, currentTeamIndex, teamAmount, teamStylings);
-            }
+    private void createBaseBossbarTexts() {
+        final int
+            teamIndex = game.getTeamIndex(team),
+            teamAmount = game.getTeamsAmount();
+        for (int currentTurn = 0; currentTurn < game.getTeamsAmount(); currentTurn++) {
+            baseBossbarTexts[currentTurn] =
+                    getBossbarText(currentTurn, teamIndex, teamAmount, teamStylings);
+        }
     }
 
     private static final Style
@@ -180,26 +171,18 @@ public final class TeamsDisplay {
     }
 
     private void updateBossbarText(BossBar bossbar, Component bossbarText) {
-        for (int i = 0; i < bossbars.length; i++) {
-            String percentage = (int) Math.ceil(((double) game.getTeamHealth(i) / game.getTeamMaxHealth(i)) * 100) + "%";
+            String percentage = (int) Math.ceil(((double) team.getTeamHealthSum() / team.getTeamMaxHealthSum()) * 100) + "%";
 
             // Percentages
             bossbarText = bossbarText
                     .append(offset(22 - (int) Math.floor(percentage.length() * 2.5)))
                     .append(text(percentage, TOPBAR_FONT))
                     .append(offset(22 - (int) Math.ceil(percentage.length() * 2.5) + 3));
-        }
 
         bossbar.name(bossbarText);
     }
 
     public void remove() {
-        tryCatch(() -> {
-            for (int i = 0; i < bossbars.length; i++) {
-                BossBar bossBar = bossbars[i];
-                bossBar.removeViewer(teamAudiences[i]);
-                bossbars[i] = null;
-            }
-        });
+        tryCatch(() -> bossbar.removeViewer(teamAudience));
     }
 }

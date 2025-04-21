@@ -1,10 +1,11 @@
 package me.antidotaleks.iter;
 
 import me.antidotaleks.iter.elements.GamePlayer;
+import me.antidotaleks.iter.elements.GameTeam;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.maps.Map;
 import me.antidotaleks.iter.utils.TeamStyling;
-import me.antidotaleks.iter.utils.TeamsDisplay;
+import me.antidotaleks.iter.utils.TeamDisplay;
 import me.antidotaleks.iter.utils.items.GameItem;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -17,19 +18,16 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.*;
 
 import static me.antidotaleks.iter.Iter.tryCatch;
 
 public class Game implements Listener {
     // Teams
-    private final GamePlayer[][] teams;
-    private final Player[][] teamsBukkit;
+    private final List<GameTeam> teams = new ArrayList<>();
     private final TeamStyling[] teamStylings;
-    private TeamsDisplay teamsDisplay;
+    private TeamDisplay teamDisplay;
     // Turns
     private int currentTeamPlayIndex = 0;
     private final int[] teamPlayOrder;
@@ -49,24 +47,31 @@ public class Game implements Listener {
 
         List<Player[]> teamList = Arrays.asList(playersInTeams);
         Collections.shuffle(teamList);
-        teamsBukkit = teamList.toArray(new Player[0][0]);
 
-        // Create GamePlayers and register events for them
 
-        this.teams = new GamePlayer[teamsBukkit.length][];
-        for (int teamIndex = 0; teamIndex < teamsBukkit.length; teamIndex++) {
+        for (int teamIndex = 0; teamIndex < playersInTeams.length; teamIndex++) {
 
             // Get the team and their info
 
-            GamePlayer[] team = teams[teamIndex] = new GamePlayer[teamsBukkit[teamIndex].length];
+            final Iterator<Point> teamSpawnPoints = map.getSpawnPoints(teamIndex).iterator();
+            final ConfigurationSection teamModifier = map.getModifiers(teamIndex);
 
-            final Player[] teamBukkit = teamsBukkit[teamIndex];
-            final ArrayList<Point> teamSpawnPoints = map.getSpawnPoints(teamIndex);
-            final ConfigurationSection teamModifiers = map.getModifiers(teamIndex);
+            // Create GameTeams
 
-            // Set vanilla player settings
+            GamePlayer[] players = Arrays.stream(playersInTeams[teamIndex]).map(
+                    player -> new GamePlayer(player, this, teamSpawnPoints.next(), teamModifier, 0.0)
+            ).toArray(GamePlayer[]::new);
 
-            for (Player player : teamBukkit) {
+            GameTeam team = new GameTeam(this, players);
+            teams.add(team);
+
+            // Setup players
+
+            team.forEachPlayer(player ->
+                    player.teleport(player.getWorldPosition().add(0, 3.5, 0))
+            );
+
+            team.forEachPlayerBukkit(player -> {
                 player.setGameMode(GameMode.ADVENTURE);
                 player.setAllowFlight(true);
                 player.setFlying(true);
@@ -74,15 +79,7 @@ public class Game implements Listener {
                         new org.bukkit.potion.PotionEffect(
                                 PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false)
                 );
-            }
-
-            // Create GamePlayers
-
-            for (int playerIndex = 0; playerIndex < teamBukkit.length; playerIndex++)
-                team[playerIndex] = new GamePlayer(teamBukkit[playerIndex], this, (Point) teamSpawnPoints.get(playerIndex).clone(), teamModifiers, 0.0);
-
-            for (GamePlayer player : team)
-                player.teleport(player.getWorldPosition().add(0,3.5,0));
+            });
         }
 
     }
@@ -95,67 +92,52 @@ public class Game implements Listener {
 
     public void startGame() {
         Iter.logger.info("Starting game");
+        teams.forEach(team -> {
+            team.forEachPlayer(player -> player.getInfoDisplay().mount());
+            team.createTeamDisplay();
+        });
 
-        for (int teamIndex = 0; teamIndex < map.getTeamsAmount(); teamIndex++) {
-            // Get the team and their spawn points
-            GamePlayer[] team = teams[teamIndex];
-
-            // Teleport players to their spawn points
-            for (int playerIndex = 0; playerIndex < team.length; playerIndex++) {
-                GamePlayer gamePlayer = teams[teamIndex][playerIndex];
-
-                gamePlayer.getInfoDisplay().mount();
-                gamePlayer.setPosition(gamePlayer.getPosition());
-            }
-        }
-
-        teamsDisplay = new TeamsDisplay(this);
         roundStart();
     }
 
     public void stopGame() {
         map.removeMap(mapLocation);
-        teamsDisplay.remove();
+        teamDisplay.remove();
 
-        for (GamePlayer[] team : teams) {
-            for (GamePlayer player : team) {
+        teams.forEach(team -> {
+            team.forEachPlayer(player -> {
                 HandlerList.unregisterAll(player);
                 tryCatch(player::stop);
-            }
-        }
+            });
 
-        for (Player[] team : teamsBukkit) {
-            for (Player player : team) {
-                player.teleport(mapLocation.getWorld().getSpawnLocation());
-            }
-        }
-
+            team.forEachPlayerBukkit(player ->
+                player.teleport(mapLocation.getWorld().getSpawnLocation())
+            );
+        });
     }
 
     private void roundStart() {
-        teamsDisplay.updateBossbars();
-        getAllBukkitPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStylings[currentTeamPlay()].toString() +" turn", 5, 35, 5));
+        teamDisplay.updateBossbar();
+        getAllBukkitPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStylings[currentTeamPlayIndex()].toString() +" turn", 5, 35, 5));
 
-        playersFinishedTurn.addAll(List.of(teams[currentTeamPlay()]));
-
-        for (GamePlayer player : teams[currentTeamPlay()])
-            player.roundStart();
+        GameTeam nextTeam = teams.get(currentTeamPlayIndex);
+        playersFinishedTurn.addAll(nextTeam.getPlayers());
+        nextTeam.forEachPlayer(GamePlayer::roundStart);
     }
 
     private void roundFinishing() {
+        GameTeam team = teams.get(currentTeamPlayIndex);
 
         new BukkitRunnable() { @Override public void run() {
-            boolean allItemsUsed = true;
-
-            for (GamePlayer player : teams[currentTeamPlay()]) {
-                allItemsUsed = !player.useNextItem() && allItemsUsed;
+            final boolean[] allItemsUsed = {true};
+            team.forEachPlayer(player -> {
+                allItemsUsed[0] = !player.useNextItem() && allItemsUsed[0];
                 // Becomes false if at least 1 player had an item to use
-            }
-
-            teamsDisplay.updateBossbars();
+            });
+            teamDisplay.updateBossbar();
             getAllGamePlayers().forEach(GamePlayer::updateInfo);
 
-            if(allItemsUsed) {
+            if(allItemsUsed[0]) {
                 cancel();
                 roundEnd();
             }
@@ -163,13 +145,13 @@ public class Game implements Listener {
     }
 
     private void roundEnd() {
-        for (GamePlayer player : teams[currentTeamPlay()]) {
+        teams.get(currentTeamPlayIndex).forEachPlayer(player -> {
             player.roundEnd();
             player.setEnergy(player.getMaxEnergy());
             player.updateInfo();
-        }
+        });
 
-        stepPlayIndex();
+        incrementPlayIndex();
         roundStart();
     }
 
@@ -186,11 +168,10 @@ public class Game implements Listener {
                 event.getPlayer().getPlayer().getName(), (playersFinishedTurn.isEmpty()) ? "All players finished their turn" : "Left: " + playersFinishedTurn.size()
         ));
 
+        // If all players finished their turn, finish round
 
         if (!playersFinishedTurn.isEmpty())
-            return;
-
-        roundFinishing();
+            roundFinishing();
     }
     
     // Utils
@@ -199,16 +180,12 @@ public class Game implements Listener {
         return 0;
     }
 
-    public void stepPlayIndex() {
+    public void incrementPlayIndex() {
         currentTeamPlayIndex = (++currentTeamPlayIndex)%teamPlayOrder.length;
     }
 
-    public int currentTeamPlay() {
+    public int currentTeamPlayIndex() {
         return currentTeamPlayIndex;
-    }
-
-    public int teamAmount() {
-        return teams.length;
     }
 
     public Location toWorldLocation(Point point) {
@@ -228,8 +205,7 @@ public class Game implements Listener {
     }
 
     public GamePlayer getPlayer(Player player) {
-        return Arrays.stream(teams)
-                .flatMap(Arrays::stream)
+        return getAllGamePlayers().stream()
                 .filter(gamePlayer -> gamePlayer.getPlayer().equals(player))
                 .findFirst()
                 .orElse(null);
@@ -238,35 +214,27 @@ public class Game implements Listener {
     /**
      * Use in {@link GameItem#use(Point)}
      * @param coords coordinates, where the item was used
-     * @return player at given position
+     * @return player at given position, {@code null} if there is no player at given coords
      */
     public GamePlayer getPlayer(Point coords) {
-        for (GamePlayer[] team : teams) {
-            for (GamePlayer player : team) {
-                if (player.getPosition().equals(coords))
-                    return player;
-            }
-        }
-        return null;
+        return getAllGamePlayers().stream()
+                .filter(player -> player.getPosition().equals(coords))
+                .findFirst().orElse(null);
     }
 
     /**
      * Use in {@link GameItem#usable(Point, int)}
      * @param coords coordinates, where the item was used
      * @param step ordinal player's item use
-     * @return player at given position in specific time (step)
+     * @return player at given position in specific time (step), {@code null} if there is no player at given coords and time
      */
     public GamePlayer getPlayer(Point coords, int step) {
         if (step <= 0)
             return getPlayer(coords);
 
-        for (GamePlayer[] team : teams) {
-            for (GamePlayer player : team) {
-                if (player.getPositionAtStep(step).equals(coords))
-                    return player;
-            }
-        }
-        return null;
+        return getAllGamePlayers().stream()
+                .filter(player -> player.getPositionAtStep(step).equals(coords))
+                .findFirst().orElse(null);
     }
 
     /**
@@ -275,28 +243,26 @@ public class Game implements Listener {
      * @return the team of the player
      * @throws IllegalArgumentException if the player is not in the game, shouldn't happen
      */
-    public GamePlayer[] getTeam(Player player) {
-        return Arrays.stream(teams)
-                .filter(team -> Arrays.stream(team).anyMatch(gamePlayer -> gamePlayer.getPlayer().equals(player)))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Player not in the game"));
+    public GameTeam getTeam(Player player) {
+        return teams.stream()
+                .filter(team -> team.hasPlayer(player))
+                .findFirst().orElse(null);
     }
 
     public int getTeamIndex(Player player) {
-        for (int i = 0; i < teamsBukkit.length; i++) {
-            if (Arrays.asList(teamsBukkit[i]).contains(player)) {
-                return i;
-            }
-        }
-        return -1;
+        return teams.indexOf(getTeam(player));
     }
 
-    public GamePlayer[][] getTeams() {
+    public int getTeamIndex(GameTeam team) {
+        return teams.indexOf(team);
+    }
+
+    public List<GameTeam> getTeams() {
         return teams;
     }
 
-    public Player[][] getTeamsBukkit() {
-        return teamsBukkit;
+    public int getTeamsAmount() {
+        return teams.size();
     }
 
     public TeamStyling[] getTeamStylings() {
@@ -308,22 +274,10 @@ public class Game implements Listener {
     }
 
     public List<GamePlayer> getAllGamePlayers() {
-        return Arrays.stream(teams).flatMap(Arrays::stream).toList();
+        return teams.stream().flatMap(team -> team.getPlayers().stream()).toList();
     }
 
     public List<Player> getAllBukkitPlayers() {
-        return Arrays.stream(teamsBukkit).flatMap(Arrays::stream).toList();
-    }
-
-    public int getTeamHealth(int teamIndex) {
-        return Arrays.stream(teams[teamIndex])
-                .mapToInt(GamePlayer::getHealth)
-                .sum();
-    }
-
-    public int getTeamMaxHealth(int teamIndex) {
-        return Arrays.stream(teams[teamIndex])
-                .mapToInt(GamePlayer::getMaxHealth)
-                .sum();
+        return teams.stream().flatMap(team -> team.getPlayersBukkit().stream()).toList();
     }
 }
