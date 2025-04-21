@@ -120,7 +120,7 @@ public class Game implements Listener {
         getAllBukkitPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStylings[currentTeamPlayIndex()].toString() +" turn", 5, 35, 5));
 
         GameTeam nextTeam = teams.get(currentTeamPlayIndex);
-        playersFinishedTurn.addAll(nextTeam.getPlayers());
+        playersLeftThisTurn.addAll(nextTeam.getPlayers());
         nextTeam.forEachPlayer(GamePlayer::roundStart);
     }
 
@@ -152,7 +152,9 @@ public class Game implements Listener {
 
             // Use items in order of priority
 
-            List<List<GamePlayer>> playerUseOrdered = groupedByPriority.entrySet().stream().sorted((a, b) -> b.getKey() - a.getKey()).map(java.util.Map.Entry::getValue).toList();
+            List<List<GamePlayer>> playerUseOrdered = groupedByPriority.entrySet().stream()
+                    .sorted(java.util.Map.Entry.<Integer, List<GamePlayer>>comparingByKey().reversed())
+                    .map(java.util.Map.Entry::getValue).toList();
             tryIgnored(() -> useItemsOfCurrentStep(playerUseOrdered));
 
         }}.runTaskLater(Iter.plugin, 5); // Ass spaghetti code
@@ -162,16 +164,16 @@ public class Game implements Listener {
         if(playerUseOrdered.isEmpty())
             throw new IllegalStateException("No players to use items");
 
-        int useTime = -1;
-        for (GamePlayer player : playerUseOrdered.getFirst()) {
-            useTime = Math.max(player.useNextItem(), useTime);
-        }
+        int maxDelay = playerUseOrdered.getFirst().stream()
+                .mapToInt(GamePlayer::useNextItem)
+                .max()
+                .orElse(-1);
         playerUseOrdered.removeFirst();
         // Update info for all players
         teams.forEach(GameTeam::updateTeamDisplay);
         getAllGamePlayers().forEach(GamePlayer::updateInfo);
 
-        if (useTime == -1) {
+        if (maxDelay == -1) {
             roundFinishing();
             return;
         }
@@ -179,7 +181,7 @@ public class Game implements Listener {
         // Use items in order of priority after item's use time (aka animation delay)
         new BukkitRunnable() { @Override public void run() {
             useItemsOfCurrentStep(playerUseOrdered);
-        }}.runTaskLater(Iter.plugin, useTime);
+        }}.runTaskLater(Iter.plugin, maxDelay);
     }
 
     private void roundEnd() {
@@ -193,22 +195,22 @@ public class Game implements Listener {
         roundStart();
     }
 
-    ArrayList<GamePlayer> playersFinishedTurn = new ArrayList<>();
+    ArrayList<GamePlayer> playersLeftThisTurn = new ArrayList<>();
     @EventHandler 
     public void playerFinishTurn(PlayerFinishTurnEvent event) {
-        if(!playersFinishedTurn.contains(event.getPlayer()))
+        if(!playersLeftThisTurn.contains(event.getPlayer()))
             return;
 
-        playersFinishedTurn.remove(event.getPlayer());
+        playersLeftThisTurn.remove(event.getPlayer());
 
         Iter.logger.info(String.format(
                 "Player %s finished turn. %s",
-                event.getPlayer().getPlayer().getName(), (playersFinishedTurn.isEmpty()) ? "All players finished their turn" : "Left: " + playersFinishedTurn.size()
+                event.getPlayer().getPlayer().getName(), (playersLeftThisTurn.isEmpty()) ? "All players finished their turn" : "Left: " + playersLeftThisTurn.size()
         ));
 
         // If all players finished their turn, finish round
 
-        if (!playersFinishedTurn.isEmpty())
+        if (playersLeftThisTurn.isEmpty())
             roundFinishing();
     }
     
