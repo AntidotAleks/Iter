@@ -93,8 +93,6 @@ public class RoundCompletionProcessor {
                         .max()
                         .orElse(0) + BETWEEN_GROUP_DELAY;
 
-                Iter.logger.info(" | | | Group processed. Scheduling next group with delay: " + nextDelay);
-
                 // Refresh UI after each group's items are used
                 game.getTeams().forEach(GameTeam::updateTeamDisplay);
                 game.getAllGamePlayers().forEach(GamePlayer::updateInfo);
