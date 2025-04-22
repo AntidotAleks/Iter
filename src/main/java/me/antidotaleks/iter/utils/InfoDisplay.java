@@ -44,7 +44,7 @@ public final class InfoDisplay {
     private final FakePlayer fakePlayer;
     private final Player player;
     private final Audience audience;
-    private final TeamStyling teamStyling;
+    private final TeamStyle teamStyle;
 
     private final TextDisplay
             infoDisplay,
@@ -62,19 +62,23 @@ public final class InfoDisplay {
     public InfoDisplay(GamePlayer player) {
         if (player == null)
             throw new IllegalArgumentException("Player cannot be null");
+        if (player.getFakePlayer() == null)
+            throw new IllegalStateException("Player must have FakePlayer object created before InfoDisplay");
 
         this.gamePlayer = player;
         this.fakePlayer = player.getFakePlayer();
         this.player = player.getPlayer();
         this.audience = Iter.audiences.player(this.player);
-        this.teamStyling = gamePlayer.getTeamStyling();
+        this.teamStyle = player.getTeam().getStyle();
 
-        // Create displays
-        infoDisplay = Iter.tryCatchReturn(() -> newAbovePlayerInfoDisplay(true));
-        fakePlayerInfoDisplay = Iter.tryCatchReturn(() -> newAbovePlayerInfoDisplay(false));
-        cursor = Iter.tryCatchReturn(this::newCursor);
+        this.infoDisplay = Iter.tryCatchReturn(() -> newAbovePlayerInfoDisplay(true));
+        this.fakePlayerInfoDisplay = Iter.tryCatchReturn(() -> newAbovePlayerInfoDisplay(false));
+        this.cursor = Iter.tryCatchReturn(this::newCursor);
+
+        player.getPlayer().setPlayerListName(ChatColor.of(teamStyle.color) +"["+ teamStyle +"] "+ ChatColor.of(teamStyle.lightColor) + player.getPlayer().getName());
 
         update();
+        mount();
     }
 
     // Display creation
@@ -90,12 +94,11 @@ public final class InfoDisplay {
         infoDisplay.setBackgroundColor(Color.fromARGB(0,0,0,0));
         infoDisplay.setTeleportDuration(3);
 
-        if (isForRealPlayer)
-            infoDisplay.setTextOpacity((byte) 100);
+        if (isForRealPlayer) {
+            infoDisplay.setTextOpacity((byte) 100); // ~half transparent
+            this.player.hideEntity(Iter.plugin, infoDisplay); // hide info for themselves
+        }
 
-        // hide info for themselves
-        if (isForRealPlayer)
-            this.player.hideEntity(Iter.plugin, infoDisplay);
 
         return infoDisplay;
     }
@@ -134,11 +137,11 @@ public final class InfoDisplay {
         int maxHealth = gamePlayer.getMaxHealth();
         int energy = gamePlayer.getEnergy();
         int maxEnergy = gamePlayer.getMaxEnergy();
-        String teamName = "Team " + teamStyling.toString();
+        String teamName = "Team " + teamStyle.toString();
 
         // Update scoreboard
         String infoString = String.format("%s%s: %s%s\n"+ ChatColor.of("#"+HEALTH_COLOR) +"❤%d/%d "+ChatColor.RESET+"| "+ChatColor.of("#"+ENERGY_COLOR)+"♦ %d/%d\n",
-                        ChatColor.of(teamStyling.color), teamName, ChatColor.of(teamStyling.lightColor), this.player.getName(), health, maxHealth, energy, maxEnergy);
+                        ChatColor.of(teamStyle.color), teamName, ChatColor.of(teamStyle.lightColor), this.player.getName(), health, maxHealth, energy, maxEnergy);
 
         infoDisplay.setText(infoString);
         fakePlayerInfoDisplay.setText(infoString);

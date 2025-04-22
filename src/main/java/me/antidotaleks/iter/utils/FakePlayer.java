@@ -15,10 +15,11 @@ import org.bukkit.entity.Player;
 import java.util.*;
 
 import static me.antidotaleks.iter.Iter.tryCatch;
+import static me.antidotaleks.iter.Iter.tryCatchReturn;
 
 public final class FakePlayer {
     private final GamePlayer playerBase;
-    private final List<Player> allPlayersInGame;
+    private List<Player> allPlayersInGame;
     private Location location;
 
     private int entityId = -1;
@@ -28,12 +29,11 @@ public final class FakePlayer {
 
     public FakePlayer(GamePlayer player) {
         this.playerBase = player;
-        this.allPlayersInGame = player.getGame().getAllBukkitPlayers();
-
         spawnFakePlayer();
     }
 
     public void spawnFakePlayer() {
+        this.allPlayersInGame = tryCatchReturn(() -> playerBase.getGame().getAllBukkitPlayers());
         tryCatch(() -> {
             spawnFakePlayer(allPlayersInGame);
             glow(playerBase.getPlayer());
@@ -41,6 +41,7 @@ public final class FakePlayer {
     }
 
     private void spawnFakePlayer(List<Player> playersToSpawnTo) {
+        if(playersToSpawnTo == null) return;
 
         // Filter list of players
 
@@ -56,7 +57,7 @@ public final class FakePlayer {
         // Generate info
 
         if (entityId != -1)
-            remove();
+            removeFakePlayer();
         entityId = (int) (Math.random() * Integer.MAX_VALUE);
         uuid = UUID.randomUUID();
         location = playerBase.getWorldPosition();
@@ -121,6 +122,10 @@ public final class FakePlayer {
     }
 
     private void moveEntity(int entityId, Location newLocation, List<Player> playersToShowTeleport) {
+        if(playersToShowTeleport == null) return;
+
+        playersToShowTeleport = playersToShowTeleport.stream().filter(Objects::nonNull).toList();
+        if(playersToShowTeleport.isEmpty()) return;
 
         // Create packets
 
@@ -148,11 +153,13 @@ public final class FakePlayer {
         this.location = newLocation;
     }
 
-    public void remove() {
-        tryCatch(() -> remove(allPlayersInGame), "Error removing fake player");
+    public void removeFakePlayer() {
+        this.allPlayersInGame = tryCatchReturn(() -> playerBase.getGame().getAllBukkitPlayers());
+        tryCatch(() -> removeFakePlayer(allPlayersInGame), "Error removing fake player");
     }
 
-    private void remove(List<Player> playersToRemoveFrom) {
+    private void removeFakePlayer(List<Player> playersToRemoveFrom) {
+        if(playersToRemoveFrom == null) return;
 
         if(entityId == -1) return;
 
@@ -236,6 +243,7 @@ public final class FakePlayer {
 
         // Filter list of players
 
+        if(playersToAddPassengerTo == null) return;
         playersToAddPassengerTo = playersToAddPassengerTo.stream().filter(Objects::nonNull).toList();
         if(playersToAddPassengerTo.isEmpty()) return;
         passengerIds.add(passengerId);
@@ -252,8 +260,13 @@ public final class FakePlayer {
 
     private void removePassenger(int passengerId, List<Player> playersToRemovePassengerFrom) {
 
-        // Filter list of players
+        if(entityId == -1) {
+            Iter.logger.warning("Attempted to remove passenger from non-existent fake player");
+            return;
+        }
 
+        // Filter list of players
+        if(playersToRemovePassengerFrom == null) return;
         playersToRemovePassengerFrom = playersToRemovePassengerFrom.stream().filter(Objects::nonNull).toList();
         if(playersToRemovePassengerFrom.isEmpty()) return;
         passengerIds.remove((Integer) passengerId);

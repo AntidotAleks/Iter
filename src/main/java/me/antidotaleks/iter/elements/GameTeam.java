@@ -1,11 +1,14 @@
 package me.antidotaleks.iter.elements;
 
-import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.utils.TeamDisplay;
+import me.antidotaleks.iter.utils.TeamStyle;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
+import java.awt.*;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -20,14 +23,30 @@ public class GameTeam {
     // Misc
     private final Game game;
     private TeamDisplay teamDisplay;
+    private final int teamIndex;
+    private final TeamStyle teamStyle;
 
-    public GameTeam(Game game, GamePlayer[] playersInTeam) {
+    public GameTeam(Game game, int teamIndex, Player[] players) {
         this.game = game;
-        players = (HashSet<GamePlayer>) Arrays.stream(playersInTeam).collect(Collectors.toSet());
-        playersArray = players.stream().toList();
+        this.teamIndex = teamIndex;
+        this.teamStyle = game.getTeamStyle(teamIndex);
 
-        playersBukkit = (HashSet<Player>) players.stream().map(GamePlayer::getPlayer).collect(Collectors.toSet());
-        playersBukkitArray = playersBukkit.stream().toList();
+        // Create GamePlayers
+
+        final Iterator<Point> teamSpawnPoints = game.getMap().getSpawnPoints(teamIndex).iterator();
+        final ConfigurationSection teamModifier = game.getMap().getModifiers(teamIndex);
+
+        GamePlayer[] gamePlayers = Arrays.stream(players).map(
+                player -> new GamePlayer(player, this, teamSpawnPoints.next(), teamModifier, 0.0)
+        ).toArray(GamePlayer[]::new);
+
+        // Create lists and sets
+
+        this.players = (HashSet<GamePlayer>) Arrays.stream(gamePlayers).collect(Collectors.toSet());
+        this.playersArray = this.players.stream().toList();
+
+        this.playersBukkit = (HashSet<Player>) Arrays.stream(players).collect(Collectors.toSet());
+        this.playersBukkitArray = playersBukkit.stream().toList();
     }
 
     // Utils
@@ -74,9 +93,17 @@ public class GameTeam {
         return game;
     }
 
+    public int getTeamIndex() {
+        return teamIndex;
+    }
+
+    public TeamStyle getStyle() {
+        return teamStyle;
+    }
+
     // Team display
 
-    public void createTeamDisplay() {
+    public void createDisplay() {
         if (teamDisplay != null)
             return;
 

@@ -32,17 +32,17 @@ public abstract class MovementGameItem extends GameItem implements PreUsed {
 
     @Override
     public void preUse(Point coords) {
-        player.nextStep.add(coords);
+        player.stepPlan.add(coords);
     }
 
     public void undoPreUse() {
-        player.nextStep.removeLast();
+        player.stepPlan.removeLast();
     }
 
     @Override
     public void use(Point coords) {
-        player.setPosition(player.nextStep.getFirst());
-        player.nextStep.removeFirst();
+        player.setPosition(player.stepPlan.getFirst());
+        player.stepPlan.removeFirst();
     }
 
     @Override

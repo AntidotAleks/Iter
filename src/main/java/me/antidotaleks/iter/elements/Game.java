@@ -1,35 +1,32 @@
-package me.antidotaleks.iter;
+package me.antidotaleks.iter.elements;
 
-import me.antidotaleks.iter.elements.GamePlayer;
-import me.antidotaleks.iter.elements.GameTeam;
+import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.maps.Map;
-import me.antidotaleks.iter.utils.TeamStyling;
+import me.antidotaleks.iter.utils.RoundCompletionProcessor;
+import me.antidotaleks.iter.utils.TeamStyle;
 import me.antidotaleks.iter.utils.items.GameItem;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.*;
 
 import static me.antidotaleks.iter.Iter.tryCatch;
-import static me.antidotaleks.iter.Iter.tryIgnored;
 
 public class Game implements Listener {
     // Teams
-    private final List<GameTeam> teams = new ArrayList<>();
-    private final TeamStyling[] teamStylings;
+    private final List<GameTeam> teams;
+    private final TeamStyle[] teamStyles;
     // Turns
     private int currentTeamPlayIndex = 0;
-    private final int[] teamPlayOrder;
     // Map
     private final Map map;
     private final Location mapLocation;
@@ -39,30 +36,19 @@ public class Game implements Listener {
         Iter.logger.info("Creating game with map " + map.getDisplayName());
         this.map = map;
         this.mapLocation = map.buildMap();
-        this.teamPlayOrder = map.teamPlayOrder();
-        this.teamStylings = TeamStyling.getColors(playersInTeams.length);
+        this.teamStyles = TeamStyle.getColors(playersInTeams.length);
 
-        // shuffle teams by teamPlayOrder
+        // Create teams array to set the order of teams
 
-        List<Player[]> teamList = Arrays.asList(playersInTeams);
-        Collections.shuffle(teamList);
-
+        GameTeam[] teamsArray = new GameTeam[playersInTeams.length];
+        int[] teamPlayOrder = map.teamPlayOrder();
 
         for (int teamIndex = 0; teamIndex < playersInTeams.length; teamIndex++) {
 
-            // Get the team and their info
-
-            final Iterator<Point> teamSpawnPoints = map.getSpawnPoints(teamIndex).iterator();
-            final ConfigurationSection teamModifier = map.getModifiers(teamIndex);
-
             // Create GameTeams
 
-            GamePlayer[] players = Arrays.stream(playersInTeams[teamIndex]).map(
-                    player -> new GamePlayer(player, this, teamSpawnPoints.next(), teamModifier, 0.0)
-            ).toArray(GamePlayer[]::new);
-
-            GameTeam team = new GameTeam(this, players);
-            teams.add(team);
+            GameTeam team = new GameTeam(this, teamPlayOrder[teamIndex], playersInTeams[teamIndex]);
+            teamsArray[teamPlayOrder[teamIndex]] = team;
 
             // Setup players
 
@@ -81,6 +67,9 @@ public class Game implements Listener {
             });
         }
 
+        // Convert teamsArray to teams
+        teams = Arrays.asList(teamsArray);
+
     }
 
     public Map getMap() {
@@ -92,8 +81,8 @@ public class Game implements Listener {
     public void startGame() {
         Iter.logger.info("Starting game");
         teams.forEach(team -> {
-            team.forEachPlayer(player -> player.getInfoDisplay().mount());
-            team.createTeamDisplay();
+            team.forEachPlayer(GamePlayer::gameStart);
+            team.createDisplay();
         });
 
         roundStart();
@@ -117,7 +106,7 @@ public class Game implements Listener {
 
     private void roundStart() {
         teams.forEach(GameTeam::updateTeamDisplay);
-        getAllBukkitPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStylings[currentTeamPlayIndex()].toString() +" turn", 5, 35, 5));
+        getAllBukkitPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStyles[currentTeamPlayIndex()].toString() +" turn", 5, 35, 5));
 
         GameTeam nextTeam = teams.get(currentTeamPlayIndex);
         playersLeftThisTurn.addAll(nextTeam.getPlayers());
@@ -125,63 +114,7 @@ public class Game implements Listener {
     }
 
     private void roundFinishing() {
-        GameTeam team = teams.get(currentTeamPlayIndex);
-
-        new BukkitRunnable() { @Override public void run() {
-
-            // Separate by item priority
-
-            java.util.Map<Integer, List<GamePlayer>> groupedByPriority = new HashMap<>();
-
-            for (GamePlayer player : team.getPlayers()) {
-                int priority = player.getNextItemPriority();
-                if (priority == Integer.MIN_VALUE) continue;
-
-                groupedByPriority
-                        .computeIfAbsent(priority, k -> new ArrayList<>())
-                        .add(player);
-            }
-
-            // If no players have items to use, end the round
-
-            if(groupedByPriority.isEmpty()) {
-                cancel();
-                roundEnd();
-                return;
-            }
-
-            // Use items in order of priority
-
-            List<List<GamePlayer>> playerUseOrdered = groupedByPriority.entrySet().stream()
-                    .sorted(java.util.Map.Entry.<Integer, List<GamePlayer>>comparingByKey().reversed())
-                    .map(java.util.Map.Entry::getValue).toList();
-            tryIgnored(() -> useItemsOfCurrentStep(playerUseOrdered));
-
-        }}.runTaskLater(Iter.plugin, 5); // Ass spaghetti code
-    }
-
-    private void useItemsOfCurrentStep(List<List<GamePlayer>> playerUseOrdered) {
-        if(playerUseOrdered.isEmpty())
-            throw new IllegalStateException("No players to use items");
-
-        int maxDelay = playerUseOrdered.getFirst().stream()
-                .mapToInt(GamePlayer::useNextItem)
-                .max()
-                .orElse(-1);
-        playerUseOrdered.removeFirst();
-        // Update info for all players
-        teams.forEach(GameTeam::updateTeamDisplay);
-        getAllGamePlayers().forEach(GamePlayer::updateInfo);
-
-        if (maxDelay == -1) {
-            roundFinishing();
-            return;
-        }
-
-        // Use items in order of priority after item's use time (aka animation delay)
-        new BukkitRunnable() { @Override public void run() {
-            useItemsOfCurrentStep(playerUseOrdered);
-        }}.runTaskLater(Iter.plugin, maxDelay);
+        new RoundCompletionProcessor(teams.get(currentTeamPlayIndex), this::roundEnd).start();
     }
 
     private void roundEnd() {
@@ -221,11 +154,15 @@ public class Game implements Listener {
     }
 
     public void incrementPlayIndex() {
-        currentTeamPlayIndex = (++currentTeamPlayIndex)%teamPlayOrder.length;
+        currentTeamPlayIndex = (++currentTeamPlayIndex)%teams.size();
     }
 
     public int currentTeamPlayIndex() {
         return currentTeamPlayIndex;
+    }
+
+    public GameTeam currentTeamPlay() {
+        return teams.get(currentTeamPlayIndex);
     }
 
     public Location toWorldLocation(Point point) {
@@ -289,7 +226,17 @@ public class Game implements Listener {
                 .findFirst().orElse(null);
     }
 
+    public GameTeam getTeam(GamePlayer player) {
+        return teams.stream()
+                .filter(team -> team.hasPlayer(player))
+                .findFirst().orElse(null);
+    }
+
     public int getTeamIndex(Player player) {
+        return teams.indexOf(getTeam(player));
+    }
+
+    public int getTeamIndex(GamePlayer player) {
         return teams.indexOf(getTeam(player));
     }
 
@@ -305,12 +252,12 @@ public class Game implements Listener {
         return teams.size();
     }
 
-    public TeamStyling[] getTeamStylings() {
-        return teamStylings;
+    public TeamStyle[] getTeamStyles() {
+        return teamStyles;
     }
 
-    public TeamStyling getTeamDetails(Player player) {
-        return teamStylings[getTeamIndex(player)];
+    public TeamStyle getTeamStyle(int teamIndex) {
+        return teamStyles[teamIndex];
     }
 
     public List<GamePlayer> getAllGamePlayers() {

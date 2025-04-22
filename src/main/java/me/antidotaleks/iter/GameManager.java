@@ -1,5 +1,6 @@
 package me.antidotaleks.iter;
 
+import me.antidotaleks.iter.elements.Game;
 import me.antidotaleks.iter.events.PlayerCancelQueueEvent;
 import me.antidotaleks.iter.events.PlayerQueueEvent;
 import me.antidotaleks.iter.maps.Map;

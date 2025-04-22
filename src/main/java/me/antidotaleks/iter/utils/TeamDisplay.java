@@ -1,7 +1,7 @@
 package me.antidotaleks.iter.utils;
 
-import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
+import me.antidotaleks.iter.elements.Game;
 import me.antidotaleks.iter.elements.GameTeam;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.bossbar.BossBar;
@@ -22,13 +22,13 @@ public final class TeamDisplay {
     private final Audience teamAudience;
     private final BossBar bossbar;
     private final Component[] baseBossbarTexts;
-    private final TeamStyling[] teamStylings;
+    private final TeamStyle[] teamStyles;
 
     public TeamDisplay(GameTeam team) {
         this.team = team;
         this.game = team.getGame();
 
-        this.teamStylings = game.getTeamStylings();
+        this.teamStyles = game.getTeamStyles();
 
         this.teamAudience = getTeamAudience(team.getPlayersBukkit());
         this.bossbar = BossBar.bossBar(Component.empty(), BossBar.MAX_PROGRESS, BossBar.Color.PINK, BossBar.Overlay.PROGRESS);
@@ -38,7 +38,7 @@ public final class TeamDisplay {
 
         createBaseBossbarTexts();
 
-        team.forEachPlayer(player -> player.getInfoDisplay().showTopBars());
+        tryCatch(() -> team.forEachPlayer(p -> p.getInfoDisplay().showTopBars()), "TeamDisplay must be created after GamePlayer#gameStart()");
     }
 
     // Utils
@@ -57,11 +57,11 @@ public final class TeamDisplay {
 
     private void createBaseBossbarTexts() {
         final int
-            teamIndex = game.getTeamIndex(team),
+            teamIndex = team.getTeamIndex(),
             teamAmount = game.getTeamsAmount();
         for (int currentTurn = 0; currentTurn < game.getTeamsAmount(); currentTurn++) {
             baseBossbarTexts[currentTurn] =
-                    getBossbarText(currentTurn, teamIndex, teamAmount, teamStylings);
+                    getBossbarText(currentTurn, teamIndex, teamAmount, teamStyles);
         }
     }
 
@@ -71,17 +71,17 @@ public final class TeamDisplay {
     private static final String[]
             TOPBAR_S_TEAM = new String[]{"\uE000", "\uE001", "\uE002"},
             TOPBAR_S_TURNS = new String[]{"\uE003", "\uE004", "\uE005", "\uE006", "\uE007", "\uE008"};
-    private static Component getBossbarText(int currentTeamPlaying, int currentTeamShownTo, int teamAmount, TeamStyling[] teamStylings) {
+    private static Component getBossbarText(int currentTeamPlaying, int currentTeamShownTo, int teamAmount, TeamStyle[] teamStyles) {
         Component bossbarText = Component.empty();
 
-        for (int i = 0; i < teamStylings.length; i++) {
-            TeamStyling teamStyling = teamStylings[i];
-            final String name = teamStyling.name();
+        for (int i = 0; i < teamStyles.length; i++) {
+            TeamStyle teamStyle = teamStyles[i];
+            final String name = teamStyle.name();
 
             bossbarText = bossbarText
-                    .append(text(TOPBAR_S_TEAM[0], TOPBAR_FONT.color(teamStyling.lightTextColor)))
+                    .append(text(TOPBAR_S_TEAM[0], TOPBAR_FONT.color(teamStyle.lightTextColor)))
                     .append(offset(-44))
-                    .append(text(TOPBAR_S_TEAM[1], TOPBAR_FONT.color(teamStyling.textColor)))
+                    .append(text(TOPBAR_S_TEAM[1], TOPBAR_FONT.color(teamStyle.textColor)))
                     .append(offset(-21 - name.length() * 3))
                     .append(text(name, MONO_OFFSET_FONTS[0]))
                     .append((currentTeamShownTo != i) ? offset(22 - name.length() * 3 + 2) : // Every other team
@@ -91,7 +91,7 @@ public final class TeamDisplay {
                     );
         }
 
-        Style colored_font = TOPBAR_FONT.color(teamStylings[currentTeamPlaying].lightTextColor);
+        Style colored_font = TOPBAR_FONT.color(teamStyles[currentTeamPlaying].lightTextColor);
 
         if (currentTeamPlaying == currentTeamShownTo) {
             bossbarText = bossbarText

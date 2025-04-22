@@ -4,7 +4,7 @@ import net.kyori.adventure.text.format.TextColor;
 
 import java.awt.*;
 
-public enum TeamStyling {
+public enum TeamStyle {
     // Pastel colors
     RED    (new Color(217, 93,  93 ),
             new Color(246, 220, 220)),
@@ -31,18 +31,18 @@ public enum TeamStyling {
 
     public final Color color, lightColor;
     public final TextColor textColor, lightTextColor;
-    TeamStyling(Color color, Color lightColor) {
+    TeamStyle(Color color, Color lightColor) {
         this.color = color;
         this.lightColor = lightColor;
         this.textColor = TextColor.color(color.getRGB());
         this.lightTextColor = TextColor.color(lightColor.getRGB());
     }
 
-    public static TeamStyling[] getColors(int teamAmount) {
+    public static TeamStyle[] getColors(int teamAmount) {
         if(teamAmount > values().length)
             throw new IllegalArgumentException("Too many teams");
 
-        TeamStyling[] colors = new TeamStyling[teamAmount];
+        TeamStyle[] colors = new TeamStyle[teamAmount];
         System.arraycopy(values(), 0, colors, 0, teamAmount);
         return colors;
     }

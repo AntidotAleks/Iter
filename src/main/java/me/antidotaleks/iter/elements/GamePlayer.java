@@ -1,19 +1,16 @@
 package me.antidotaleks.iter.elements;
 
 import com.comphenix.protocol.wrappers.Pair;
-import me.antidotaleks.iter.Game;
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.items.*;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.utils.FakePlayer;
 import me.antidotaleks.iter.utils.InfoDisplay;
-import me.antidotaleks.iter.utils.TeamStyling;
 import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.utils.items.GameItem;
 import me.antidotaleks.iter.utils.items.PreUsed;
 import me.antidotaleks.iter.utils.items.specific.MovementGameItem;
-import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
@@ -42,10 +39,10 @@ public final class GamePlayer implements Listener {
     // Player
 
     private final Player player;
+    private final GameTeam team;
     private final Game game;
-    private final TeamStyling teamStyling;
-    private final FakePlayer fakePlayer;
-    private final InfoDisplay infoDisplay;
+    private FakePlayer fakePlayer;
+    private InfoDisplay infoDisplay;
     private final Point pos = new Point();
 
     // Items
@@ -53,7 +50,7 @@ public final class GamePlayer implements Listener {
     private final ArrayList<Pair<@NotNull GameItem, @NotNull Boolean>> items = new ArrayList<>(); // Pair is modifiable
     private int slotSelected = 0;
     private final ArrayList<Map.Entry<@NotNull GameItem, @NotNull Point>> itemsUsed = new ArrayList<>(); // Map.Entry is not modifiable
-    public final ArrayList<Point> nextStep = new ArrayList<>();
+    public final ArrayList<Point> stepPlan = new ArrayList<>();
 
     // Stats
 
@@ -66,27 +63,31 @@ public final class GamePlayer implements Listener {
     private boolean isDead = false;
 
 
-    public GamePlayer(Player player, Game game, Point spawnPosition, ConfigurationSection modifiers, double disbalanceModifier) {
+    public GamePlayer(Player player, GameTeam team, Point spawnPosition, ConfigurationSection modifiers, double disbalanceModifier) {
 
         // Player data
 
         this.player = player;
-        this.game = game;
+        this.team = team;
+        this.game = team.getGame();
         modifiers(modifiers, disbalanceModifier);
 
-        teamStyling = game.getTeamDetails(player);
-        fakePlayer = new FakePlayer(this);
-        infoDisplay = new InfoDisplay(this);
+        // Items
 
         tryCatch(this::giveStartItems);
 
         // Setup
 
-        player.setPlayerListName(ChatColor.of(teamStyling.color) +"["+ teamStyling +"] "+ ChatColor.of(teamStyling.lightColor) + player.getName());
         Bukkit.getPluginManager().registerEvents(this, Iter.plugin);
-        setPosition(spawnPosition);
+        pos.setLocation(spawnPosition);
+    }
 
-        // Items
+    public void gameStart() {
+        fakePlayer = new FakePlayer(this);
+        infoDisplay = new InfoDisplay(this);
+
+        updateItemBlocks();
+        infoDisplay.updateInventory();
     }
 
     private void giveStartItems() {
@@ -96,9 +97,6 @@ public final class GamePlayer implements Listener {
         addItemUpdateless(new UnusableItemTestForUI(this));
         addItemUpdateless(new MegaCannon(this));
         addItemUpdateless(new FreeWalkingItemTest(this));
-
-        updateItemBlocks();
-        infoDisplay.updateInventory();
     }
 
 
@@ -181,7 +179,7 @@ public final class GamePlayer implements Listener {
 
     public void roundEnd() {
         itemsUsed.clear();
-        nextStep.clear();
+        stepPlan.clear();
         // Just in case
         for (Pair<GameItem, Boolean> pair : items) {
             if (pair.getFirst() instanceof Cooldown itemCooldown) {
@@ -203,7 +201,7 @@ public final class GamePlayer implements Listener {
 
     public void stop() {
         infoDisplay.remove();
-        fakePlayer.remove();
+        fakePlayer.removeFakePlayer();
     }
 
     public int getNextItemPriority() {
@@ -325,23 +323,26 @@ public final class GamePlayer implements Listener {
     }
 
     public Point getPositionAtStep(int step) {
-        if (step <= 0)
+        if (step <= 0 || stepPlan.isEmpty()) // if player haven't moved yet or if there is no step plan (players on other team)
             return getPosition();
 
         ArrayList<Integer> stepList = getStepList(itemsUsed);
 
+        if (stepList.getLast() == -1)
+            return getPosition();
+
         // If player haven't used "step" amount of cards, get their last position
         if (stepList.size() <= step)
-            return (Point) nextStep.get(stepList.getLast()).clone();
+            return (Point) this.stepPlan.get(stepList.getLast()).clone();
 
         // Returns player's position at given step
-        return (Point) nextStep.get(stepList.get(step)).clone();
+        return (Point) this.stepPlan.get(stepList.get(step)).clone();
     }
 
     private static ArrayList<Integer> getStepList(List<Map.Entry<GameItem, Point>> uses) {
         // Each value = previous value + 1 if current GameItem is ItemWalk
         ArrayList<Integer> steps = new ArrayList<>();
-        steps.add(0);
+        steps.add(-1);
         for (Map.Entry<GameItem, Point> use : uses)
             steps.add(steps.getLast() + (use.getKey() instanceof MovementGameItem ? 1 : 0));
 
@@ -461,7 +462,7 @@ public final class GamePlayer implements Listener {
     }
 
     public GameTeam getTeam() {
-        return game.getTeam(player);
+        return team;
     }
 
     public List<Pair<GameItem, Boolean>> getItems() {
@@ -477,15 +478,7 @@ public final class GamePlayer implements Listener {
     }
 
     public List<Point> getStepPlanning() {
-        return Collections.unmodifiableList(nextStep);
-    }
-
-    public int getTeamIndex() {
-        return game.getTeamIndex(player);
-    }
-
-    public TeamStyling getTeamStyling() {
-        return teamStyling;
+        return Collections.unmodifiableList(stepPlan);
     }
 
     public FakePlayer getFakePlayer() {
