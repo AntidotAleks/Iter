@@ -1,13 +1,12 @@
 package me.antidotaleks.iter.utils;
 
-import me.antidotaleks.iter.elements.Game;
 import me.antidotaleks.iter.Iter;
+import me.antidotaleks.iter.elements.Game;
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.elements.GameTeam;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Processes item usage in two phases:
@@ -60,18 +59,16 @@ public class RoundCompletionProcessor {
      * Groups all players by getNextItemPriority(), descending.
      */
     private Deque<List<GamePlayer>> buildPriorityQueueForNextStep() {
-        Map<Integer, List<GamePlayer>> byPriority = new HashMap<>();
+        // Create a map of players grouped by their next item priority, highest to lowest
+        TreeMap<Integer, List<GamePlayer>> byPriority = new TreeMap<>(Comparator.reverseOrder());
         for (GamePlayer player : team.getPlayers()) {
             int priority = player.getNextItemPriority();
             if (priority == Integer.MIN_VALUE) continue;
             byPriority.computeIfAbsent(priority, k -> new ArrayList<>()).add(player);
         }
-        // Turn the map into a queue of lists, sorted by priority, from highest to lowest
-        return byPriority.entrySet().stream()
-                .sorted(Map.Entry.<Integer, List<GamePlayer>>comparingByKey().reversed())
-                .map(Map.Entry::getValue)
-                .collect(Collectors.toCollection(ArrayDeque::new));
-
+        Iter.logger.info("Priority queue has levels: " + byPriority.keySet());
+        // Turn the map into a queue of lists
+        return new ArrayDeque<>(byPriority.values());
     }
 
     /**
