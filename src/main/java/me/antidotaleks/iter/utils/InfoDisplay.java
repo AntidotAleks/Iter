@@ -51,7 +51,7 @@ public final class InfoDisplay {
             fakePlayerInfoDisplay;
     private final ItemDisplay cursor;
     private BukkitRunnable cursorUpdater;
-    private BossBar bossBar;
+    private BossBar topBar;
 
     private static final String
             HEALTH_COLOR = "ff5252",
@@ -129,7 +129,7 @@ public final class InfoDisplay {
     public void update() {
         tryCatch(this::updateInfoDisplays);
         tryCatch(this::updateTopBar);
-        tryCatch(this::changeSelectedCard);
+        tryCatch(this::updateSelection);
     }
 
     public void updateInfoDisplays() {
@@ -149,7 +149,7 @@ public final class InfoDisplay {
 
     private static final float HEALTH_BAR_MULTIPLIER = 96/182f;
     public void updateTopBar() {
-        if (bossBar == null)
+        if (topBar == null)
             return;
 
         int health = gamePlayer.getHealth();
@@ -164,16 +164,16 @@ public final class InfoDisplay {
         //                 .color(TextColor.color(Integer.parseInt(ENERGY_COLOR, 16))));
         // bossBar.name(tempText);
 
-        bossBar.progress((float) health / maxHealth * HEALTH_BAR_MULTIPLIER);
+        topBar.progress((float) health / maxHealth * HEALTH_BAR_MULTIPLIER);
     }
 
     // Card UI
 
     Sidebar sidebar = null;
-    private Component cardListToShow = null;
-    BukkitRunnable cardUpdater = null;
+    private Component bottomBar = null;
+    BukkitRunnable bottomBarUpdater = null;
 
-    public void changeSelectedCard() {
+    public void updateSelection() {
         if (cards.isEmpty())
             return;
 
@@ -183,17 +183,17 @@ public final class InfoDisplay {
             sidebar = sl.createSidebar(15);
             sidebar.addPlayer(player);
 
-            cardUpdater = new BukkitRunnable() {@Override public void run() {
-                audience.sendActionBar(cardListToShow);
+            bottomBarUpdater = new BukkitRunnable() {@Override public void run() {
+                audience.sendActionBar(bottomBar);
             }};
-            cardUpdater.runTaskTimer(Iter.plugin, 0, 15);
+            bottomBarUpdater.runTaskTimer(Iter.plugin, 0, 15);
         }
 
         int index = gamePlayer.getCurrentItemIndex();
         var cardTextBase = cards.get(index);
         // Bottom Bar card to show
-        cardListToShow = addCardBlocksToBase(cardTextBase.getKey(), index);
-        audience.sendActionBar(cardListToShow);
+        bottomBar = addCardBlocksToBase(cardTextBase.getKey(), index);
+        audience.sendActionBar(bottomBar);
 
         // Sidebar card to show
         Component[] sidebarCard = cardTextBase.getValue();
@@ -217,7 +217,7 @@ public final class InfoDisplay {
             // show all used cards
             for (int i = 0; i < usedAmount; i++)
                 sidebar.line(5-usedAmount+i, text(SIDEBAR_CARD_OFFSETS[0])
-                        .append(cardInfoBase(usedItems.get(i).getKey(), false)));
+                        .append(cardBase(usedItems.get(i).getKey(), false)));
         }
         else {
             // show amount of cards used minus 4
@@ -227,7 +227,7 @@ public final class InfoDisplay {
             // and 4 latest used cards
             for (int i = 1; i < 5; i++)
                 sidebar.line(i, text(SIDEBAR_CARD_OFFSETS[0])
-                        .append(cardInfoBase(usedItems.get(usedAmount-5+i).getKey(), false)));
+                        .append(cardBase(usedItems.get(usedAmount-5+i).getKey(), false)));
         }
     }
 
@@ -269,7 +269,7 @@ public final class InfoDisplay {
 
             cards.add(Map.entry(bottomBarCardList(i), sidebarCard(item)));
         }
-        changeSelectedCard();
+        updateSelection();
     }
 
     public void showCursor() {
@@ -305,43 +305,45 @@ public final class InfoDisplay {
     public Component bottomBarCardList(int activeIndex) {
         final int[] i = {0};
         return gamePlayer.getItems().stream()
-                .map(pair -> actionbarCard(pair.getFirst(), i[0]++ == activeIndex)).reduce(Component.empty(), Component::append).compact();
+                .map(pair -> bottomBarCard(pair.getFirst(), i[0]++ == activeIndex)).reduce(Component.empty(), Component::append).compact();
     }
 
     public void showTopBars() {
         Audience playerAsAudience = audiences.player(player);
-        bossBar = BossBar.bossBar(Component.empty(), 1, BossBar.Color.RED, BossBar.Overlay.PROGRESS);
-        bossBar.addViewer(playerAsAudience);
+        topBar = BossBar.bossBar(Component.empty(), 1, BossBar.Color.RED, BossBar.Overlay.PROGRESS);
+        topBar.addViewer(playerAsAudience);
 
         updateTopBar();
-    }
-
-    private void removeTopBar() {
-        if (bossBar == null)
-            return;
-
-        bossBar.removeViewer(audience);
-        bossBar = null;
     }
 
     // Utils
 
     public void remove() {
+        // info displays
         dismount();
         infoDisplay.remove();
         fakePlayerInfoDisplay.remove();
+
+        // Sidebar
         if (sidebar != null)
             sidebar.close();
-        if (cardUpdater != null)
-            cardUpdater.cancel();
-        if (bossBar != null)
-            bossBar.removeViewer(audience);
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent());
 
-        try {
-            cursorUpdater.cancel();
-        } catch (Exception ignored) {}
-        cursor.remove();
+        // Bottom bar
+        if (bottomBarUpdater != null)
+            bottomBarUpdater.cancel();
+        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent()); // Clear player's actionbar / bottom bar
+
+        // Top bar
+        if (topBar != null)
+            topBar.removeViewer(audience);
+
+        // Cursor
+        tryIgnored(cursorUpdater::cancel);
+        if (cursor != null)
+            cursor.remove();
+
+        // Fake player
+        fakePlayer.removeFakePlayer();
     }
 
     public void mount() {
@@ -356,11 +358,11 @@ public final class InfoDisplay {
 
     // Adventure API components generators for cards
 
-    private Component actionbarCard(GameItem item, boolean raised) {
+    private Component bottomBarCard(GameItem item, boolean raised) {
         String[] title = cardTitle(item.getName());
         int offset = raised?0:1;
 
-        Component card = cardInfoBase(item, raised);
+        Component card = cardBase(item, raised);
 
         Component[] offsets = new Component[]{
                 offset(-3*title[0].length() - 30),
@@ -386,7 +388,7 @@ public final class InfoDisplay {
         Component[] card = new Component[10];
 
         card[0] = text(SIDEBAR_CARD_OFFSETS[0])
-                .append(cardInfoBase(item, false))
+                .append(cardBase(item, false))
                 .append(text(SIDEBAR_CARD_OFFSETS[1]))
                 .append(text(CARD_BACKSIDE, CARD_FONT[0]));
         card[1] = Component.empty();
@@ -401,7 +403,7 @@ public final class InfoDisplay {
             CHAR_WIDTH = 8,
             DIGIT_WIDTH = 5,
             SPACE_WIDTH = 15;
-    private static Component cardInfoBase(GameItem item, boolean raised) {
+    private static Component cardBase(GameItem item, boolean raised) {
         int offset = raised?0:1;
         Component card = text(item.getCardSymbol(), CARD_FONT[offset])
                 .append(offset(-57));
@@ -421,8 +423,7 @@ public final class InfoDisplay {
         // Item with Conditional usage
 
         if (item instanceof Conditional)
-            card = card
-                    .append(text("\uEFF1", CARD_FONT[offset]));
+            card = card.append(text("\uEFF1", CARD_FONT[offset]));
         else
             card = card.append(offset(CHAR_WIDTH));
 
@@ -468,10 +469,6 @@ public final class InfoDisplay {
         split.addFirst(title.substring(0, spaceIndex) + (spaceFound?"":"-"));
         return split;
     }
-
-    // Adventure API components generators for bossbar/topbar
-
-
 
     // Getters
 

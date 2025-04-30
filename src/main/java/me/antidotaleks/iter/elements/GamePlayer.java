@@ -159,7 +159,7 @@ public final class GamePlayer implements Listener {
 
         player.getInventory().setHeldItemSlot(4); // Return to middle slot
 
-        infoDisplay.changeSelectedCard();
+        infoDisplay.updateSelection();
     }
 
     @EventHandler
@@ -212,7 +212,6 @@ public final class GamePlayer implements Listener {
 
     public void stop() {
         infoDisplay.remove();
-        fakePlayer.removeFakePlayer();
     }
 
     public int getNextItemPriority() {
@@ -268,7 +267,7 @@ public final class GamePlayer implements Listener {
 
         updateItemBlocks();
 
-        infoDisplay.changeSelectedCard();
+        infoDisplay.updateSelection();
         // Iter.logger.info(player.getName()+" used at tile: [" + tilePos.x + ", " + tilePos.y+"]");
     }
 
@@ -304,7 +303,7 @@ public final class GamePlayer implements Listener {
                 )
         );
 
-        infoDisplay.changeSelectedCard();
+        infoDisplay.updateSelection();
     }
 
     /**
