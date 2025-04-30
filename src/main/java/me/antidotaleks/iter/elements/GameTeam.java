@@ -115,6 +115,9 @@ public class GameTeam {
     }
 
     public void removeTeamDisplay() {
+        if(teamDisplay == null)
+            return;
+
         teamDisplay.remove();
         teamDisplay = null;
     }

@@ -19,18 +19,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.player.PlayerDropItemEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.RayTraceResult;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
 import static me.antidotaleks.iter.Iter.tryCatch;
 
@@ -47,9 +43,11 @@ public final class GamePlayer implements Listener {
 
     // Items
 
+    /** List of items in player's inventory. Each item is a pair of {@link GameItem} and boolean for if item being blocked. */
     private final ArrayList<Pair<@NotNull GameItem, @NotNull Boolean>> items = new ArrayList<>(); // Pair is modifiable
     private int slotSelected = 0;
-    private final ArrayList<Map.Entry<@NotNull GameItem, @NotNull Point>> itemsUsed = new ArrayList<>(); // Map.Entry is not modifiable
+    /** List of items used in this turn. Each item is a pair of {@link GameItem} and {@link Point} for the tile it was used on. */
+    private final ArrayDeque<Map.Entry<@NotNull GameItem, @NotNull Point>> itemsUsed = new ArrayDeque<>(); // Map.Entry is not modifiable
     public final ArrayList<Point> stepPlan = new ArrayList<>();
 
     // Stats
@@ -87,7 +85,8 @@ public final class GamePlayer implements Listener {
         infoDisplay = new InfoDisplay(this);
 
         updateItemBlocks();
-        infoDisplay.updateInventory();
+        infoDisplay.updateInventoryItemData();
+        player.getInventory().setHeldItemSlot(4);
     }
 
     private void giveStartItems() {
@@ -119,7 +118,7 @@ public final class GamePlayer implements Listener {
 
     /* RMB - use item, LMB - undo last item */
     @EventHandler
-    public void playerInteract(PlayerInteractEvent event) {
+    public void playerInteractFromEvent(PlayerInteractEvent event) {
         if (!event.getPlayer().equals(player) || !canPlay || event.getHand() != EquipmentSlot.HAND)
             return;
         event.setCancelled(true);
@@ -132,31 +131,42 @@ public final class GamePlayer implements Listener {
         updateInfo();
     }
 
-    /* Q - finish turn */
+    /* F - finish turn */
     @EventHandler
-    public void finishTurnFromEvent(PlayerDropItemEvent event) {
+    public void finishTurnFromEvent(PlayerSwapHandItemsEvent event) {
         if (!event.getPlayer().equals(player))
             return;
         event.setCancelled(true);
+
         if(!canPlay)
             return;
 
         finishTurn();
     }
 
-    /* F - next item */
+    /* Scroll wheel - change item */
     @EventHandler
-    public void nextItemFromEvent(PlayerSwapHandItemsEvent event) {
+    public void changeItemSelectedFromEvent(PlayerItemHeldEvent event) {
         if (!event.getPlayer().equals(player))
             return;
         event.setCancelled(true);
 
-        if (!player.isSneaking())
-            slotSelected = (slotSelected + 1) % items.size();
-        else
-            slotSelected = (slotSelected - 1 + items.size()) % items.size();
+        int newSlot = event.getNewSlot();
+        int itemAmount = items.size();
+
+        slotSelected += newSlot-4; // change current slot, 4 is the default middle slot
+        slotSelected = ((slotSelected % itemAmount) + itemAmount) % itemAmount; // make sure it is in range of itemAmount
+
+        player.getInventory().setHeldItemSlot(4); // Return to middle slot
 
         infoDisplay.changeSelectedCard();
+    }
+
+    @EventHandler
+    public void cancelDrop(PlayerDropItemEvent event) {
+        if (!event.getPlayer().equals(player))
+            return;
+        event.setCancelled(true);
     }
 
     // Turns
@@ -180,13 +190,14 @@ public final class GamePlayer implements Listener {
     public void roundEnd() {
         itemsUsed.clear();
         stepPlan.clear();
-        // Just in case
+
         for (Pair<GameItem, Boolean> pair : items) {
-            if (pair.getFirst() instanceof Cooldown itemCooldown) {
-                itemCooldown.decrementCooldown();
-                if (itemCooldown.getCooldown() == 0)
-                    pair.setSecond(false);
-            }
+            if (!(pair.getFirst() instanceof Cooldown itemCooldown))
+                continue;
+
+            itemCooldown.decrementCooldown();
+            if (itemCooldown.getCooldown() == 0)
+                pair.setSecond(false);
         }
 
         updateItemBlocks();
@@ -224,6 +235,7 @@ public final class GamePlayer implements Listener {
         Iter.logger.info("Used item \"" + item.getName()+"\" at tile [" + itemsUsed.getFirst().getValue().x + ", " + itemsUsed.getFirst().getValue().y+"] by " + player.getName());
 
         itemsUsed.removeFirst();
+        infoDisplay.updateCardUseHistory();
 
         return item.useTime();
     }
@@ -247,6 +259,7 @@ public final class GamePlayer implements Listener {
 
 
         itemsUsed.add(Map.entry(item, tilePos));
+        infoDisplay.updateCardUseHistory();
 
         if (item instanceof PreUsed itemPreUsed)
             itemPreUsed.preUse(tilePos);
@@ -315,7 +328,7 @@ public final class GamePlayer implements Listener {
     public void addItem(GameItem item) {
         addItemUpdateless(item);
         updateItemBlocks();
-        infoDisplay.updateInventory();
+        infoDisplay.updateInventoryItemData();
     }
 
     public Point getPosition() {
@@ -339,7 +352,7 @@ public final class GamePlayer implements Listener {
         return (Point) this.stepPlan.get(stepList.get(step)).clone();
     }
 
-    private static ArrayList<Integer> getStepList(List<Map.Entry<GameItem, Point>> uses) {
+    private static ArrayList<Integer> getStepList(Deque<Map.Entry<GameItem, Point>> uses) {
         // Each value = previous value + 1 if current GameItem is ItemWalk
         ArrayList<Integer> steps = new ArrayList<>();
         steps.add(-1);
@@ -465,6 +478,7 @@ public final class GamePlayer implements Listener {
         return team;
     }
 
+    /** Returns a list of items in player's inventory. Each item is a pair of {@link GameItem} and boolean for if item being blocked. */
     public List<Pair<GameItem, Boolean>> getItems() {
         return List.copyOf(items);
     }
@@ -473,8 +487,9 @@ public final class GamePlayer implements Listener {
         return slotSelected;
     }
 
+    /** Returns a list of items used in this turn. Each item is a pair of {@link GameItem} and {@link Point} for the tile it was used on. */
     public List<Map.Entry<GameItem, Point>> getItemsUsed() {
-        return Collections.unmodifiableList(itemsUsed);
+        return itemsUsed.stream().toList();
     }
 
     public List<Point> getStepPlanning() {

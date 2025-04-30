@@ -58,11 +58,10 @@ public final class Iter extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        while (!GameManager.games.isEmpty()) {
+        while (!GameManager.games.isEmpty())
             GameManager.stopGame(GameManager.games.getLast());
-        }
 
-        scoreboardLibrary.close();
+        tryIgnored(scoreboardLibrary::close);
     }
 
 

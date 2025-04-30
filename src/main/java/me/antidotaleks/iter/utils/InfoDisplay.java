@@ -34,9 +34,9 @@ import java.util.List;
 import java.util.Map;
 
 import static me.antidotaleks.iter.Iter.*;
-import static net.kyori.adventure.text.Component.text;
-import static net.kyori.adventure.text.Component.translatable;
+import static net.kyori.adventure.text.Component.*;
 import static net.kyori.adventure.text.format.NamedTextColor.BLACK;
+import static net.kyori.adventure.text.format.NamedTextColor.WHITE;
 
 public final class InfoDisplay {
 
@@ -174,13 +174,10 @@ public final class InfoDisplay {
     BukkitRunnable cardUpdater = null;
 
     public void changeSelectedCard() {
-        int index = gamePlayer.getCurrentItemIndex();
         if (cards.isEmpty())
             return;
-        cardListToShow = cards.get(index).getKey();
-        cardListToShow = addCardBlocks(cardListToShow, index);
-        audience.sendActionBar(cardListToShow);
 
+        // First time - create sidebar and actionbar runnable (actionbar disappears shortly without update)
         if (sidebar == null) {
             ScoreboardLibrary sl = Iter.scoreboardLibrary;
             sidebar = sl.createSidebar(15);
@@ -192,13 +189,50 @@ public final class InfoDisplay {
             cardUpdater.runTaskTimer(Iter.plugin, 0, 15);
         }
 
-        Component[] sidebarCard = cards.get(index).getValue();
-        for (int i = 0; i < sidebarCard.length; i++)
-            sidebar.line(i, sidebarCard[i]);
+        int index = gamePlayer.getCurrentItemIndex();
+        var cardTextBase = cards.get(index);
+        // Bottom Bar card to show
+        cardListToShow = addCardBlocksToBase(cardTextBase.getKey(), index);
+        audience.sendActionBar(cardListToShow);
+
+        // Sidebar card to show
+        Component[] sidebarCard = cardTextBase.getValue();
+        for (int i = 0; i < 10; i++)
+            sidebar.line(i+5, sidebarCard[i]);
+    }
+
+    public void updateCardUseHistory() {
+        if (sidebar == null)
+            return;
+
+        var usedItems = gamePlayer.getItemsUsed();
+        int usedAmount = usedItems.size();
+        logger.info(usedAmount+ " left");
+
+        // Clear previous cards
+        for (int i = 0; i < 5-usedAmount; i++)
+            sidebar.line(i, empty());
+
+        if (usedAmount <= 5) {
+            // show all used cards
+            for (int i = 0; i < usedAmount; i++)
+                sidebar.line(5-usedAmount+i, text(SIDEBAR_CARD_OFFSETS[0])
+                        .append(cardInfoBase(usedItems.get(i).getKey(), false)));
+        }
+        else {
+            // show amount of cards used minus 4
+            sidebar.line(0, text("\uEFFE",CARD_FONT[0].color(WHITE))
+                    .append(offset(-50))
+                    .append(text("+"+(usedAmount-4), MONO_OFFSET_FONTS[0])));
+            // and 4 latest used cards
+            for (int i = 1; i < 5; i++)
+                sidebar.line(i, text(SIDEBAR_CARD_OFFSETS[0])
+                        .append(cardInfoBase(usedItems.get(usedAmount-5+i).getKey(), false)));
+        }
     }
 
     private static final String CARD_BLOCK = "\uEFFE";
-    private Component addCardBlocks(Component cardList, int index) {
+    private Component addCardBlocksToBase(Component cardList, int index) {
         List<Pair<GameItem, Boolean>> itemBlockedPairList = gamePlayer.getItems();
         int itemAmount = itemBlockedPairList.size();
 
@@ -229,11 +263,11 @@ public final class InfoDisplay {
     }
 
     ArrayList<Map.Entry<Component, Component[]>> cards = new ArrayList<>();
-    public void updateInventory() {
+    public void updateInventoryItemData() {
         for (int i = 0; i < gamePlayer.getItems().size(); i++) {
             GameItem item = gamePlayer.getItems().get(i).getFirst();
 
-            cards.add(Map.entry(cardList(i), sidebarCard(item)));
+            cards.add(Map.entry(bottomBarCardList(i), sidebarCard(item)));
         }
         changeSelectedCard();
     }
@@ -268,7 +302,7 @@ public final class InfoDisplay {
         tryIgnored(() -> cursorUpdater.cancel());
     }
 
-    public Component cardList(int activeIndex) {
+    public Component bottomBarCardList(int activeIndex) {
         final int[] i = {0};
         return gamePlayer.getItems().stream()
                 .map(pair -> actionbarCard(pair.getFirst(), i[0]++ == activeIndex)).reduce(Component.empty(), Component::append).compact();
@@ -408,7 +442,7 @@ public final class InfoDisplay {
     }
 
     private static String[] cardTitle(String title) {
-        List<String> split = titleSplit(title);
+        List<String> split = cardTitleSplit(title);
         return switch (split.size()) {
             case 1 -> new String[]{"", split.get(0), ""};
             case 2 -> new String[]{split.get(0), split.get(1), ""};
@@ -417,7 +451,7 @@ public final class InfoDisplay {
     }
 
     private final static int MAX_TITLE_WIDTH = 9;
-    private static List<String> titleSplit(String title) {
+    private static List<String> cardTitleSplit(String title) {
         if (title.length() <= MAX_TITLE_WIDTH)
             return Lists.newArrayList(title);
 
@@ -430,7 +464,7 @@ public final class InfoDisplay {
                 break;
             }
 
-        List<String> split = titleSplit(title.substring(spaceIndex+(spaceFound?1:0)));
+        List<String> split = cardTitleSplit(title.substring(spaceIndex+(spaceFound?1:0)));
         split.addFirst(title.substring(0, spaceIndex) + (spaceFound?"":"-"));
         return split;
     }

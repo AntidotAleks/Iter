@@ -14,6 +14,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import static me.antidotaleks.iter.Iter.tryCatch;
+
 public final class GameManager implements Listener {
     public static ArrayList<Game> games = new ArrayList<>();
 
@@ -41,7 +43,10 @@ public final class GameManager implements Listener {
     }
 
     public static void stopGame(Game game) {
-        game.stopGame();
+        if (game == null)
+            return;
+
+        tryCatch(game::stopGame);
         HandlerList.unregisterAll(game);
 
         games.remove(game);
