@@ -18,12 +18,10 @@ import net.megavex.scoreboardlibrary.api.ScoreboardLibrary;
 import net.megavex.scoreboardlibrary.api.sidebar.Sidebar;
 import org.bukkit.Color;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.entity.Display;
 import org.bukkit.entity.ItemDisplay;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TextDisplay;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Transformation;
 import org.joml.AxisAngle4f;
@@ -35,7 +33,6 @@ import java.util.Map;
 
 import static me.antidotaleks.iter.Iter.*;
 import static net.kyori.adventure.text.Component.*;
-import static net.kyori.adventure.text.format.NamedTextColor.BLACK;
 import static net.kyori.adventure.text.format.NamedTextColor.WHITE;
 
 public final class InfoDisplay {
@@ -52,10 +49,6 @@ public final class InfoDisplay {
     private final ItemDisplay cursor;
     private BukkitRunnable cursorUpdater;
     private BossBar topBar;
-
-    private static final String
-            HEALTH_COLOR = "ff5252",
-            ENERGY_COLOR = "5297ff";
 
     // Common
 
@@ -103,12 +96,11 @@ public final class InfoDisplay {
         return infoDisplay;
     }
 
-    private static final ItemStack CURSOR_DATA = new ItemStack(Material.GLASS_PANE, 1);
 
     private ItemDisplay newCursor() {
         ItemDisplay cursor = this.player.getWorld().spawn(gamePlayer.getGame().getMapLocation(), ItemDisplay.class);
 
-        cursor.setItemStack(CURSOR_DATA);
+        cursor.setItemStack(CURSOR_IS);
         cursor.setBrightness(new Display.Brightness(15, 15));
         cursor.setTeleportDuration(1);
         cursor.setTransformation(new Transformation(
@@ -140,14 +132,13 @@ public final class InfoDisplay {
         String teamName = "Team " + teamStyle.toString();
 
         // Update scoreboard
-        String infoString = String.format("%s%s: %s%s\n"+ ChatColor.of("#"+HEALTH_COLOR) +"❤%d/%d "+ChatColor.RESET+"| "+ChatColor.of("#"+ENERGY_COLOR)+"♦ %d/%d\n",
+        String infoString = String.format("%s%s: %s%s\n"+ ChatColor.of(HEALTH_COLOR_HEX) +"❤%d/%d "+ChatColor.RESET+"| "+ChatColor.of(ENERGY_COLOR_HEX)+"♦ %d/%d\n",
                         ChatColor.of(teamStyle.color), teamName, ChatColor.of(teamStyle.lightColor), this.player.getName(), health, maxHealth, energy, maxEnergy);
 
         infoDisplay.setText(infoString);
         fakePlayerInfoDisplay.setText(infoString);
     }
 
-    private static final float HEALTH_BAR_MULTIPLIER = 96/182f;
     public void updateTopBar() {
         if (topBar == null)
             return;
@@ -164,7 +155,7 @@ public final class InfoDisplay {
         //                 .color(TextColor.color(Integer.parseInt(ENERGY_COLOR, 16))));
         // bossBar.name(tempText);
 
-        topBar.progress((float) health / maxHealth * HEALTH_BAR_MULTIPLIER);
+        topBar.progress((float) health / maxHealth * HEALTH_BAR_FRACTION);
     }
 
     // Card UI
@@ -191,11 +182,12 @@ public final class InfoDisplay {
 
         int index = gamePlayer.getCurrentItemIndex();
         var cardTextBase = cards.get(index);
+
         // Bottom Bar card to show
         bottomBar = addCardBlocksToBase(cardTextBase.getKey(), index);
         audience.sendActionBar(bottomBar);
 
-        // Sidebar card to show
+        // Sidebar card list to show
         Component[] sidebarCard = cardTextBase.getValue();
         for (int i = 0; i < 10; i++)
             sidebar.line(i+5, sidebarCard[i]);
@@ -231,7 +223,6 @@ public final class InfoDisplay {
         }
     }
 
-    private static final String CARD_BLOCK = "\uEFFE";
     private Component addCardBlocksToBase(Component cardList, int index) {
         List<Pair<GameItem, Boolean>> itemBlockedPairList = gamePlayer.getItems();
         int itemAmount = itemBlockedPairList.size();
@@ -372,7 +363,7 @@ public final class InfoDisplay {
         };
         for (int i = 0; i < 3; i++) {
             Component line = text(title[i])
-                    .style(MONO_OFFSET_FONTS[offset+i].color(BLACK));
+                    .style(MONO_OFFSET_FONTS[offset+i]);
 
             card = card.append(offsets[i]);
             card = card.append(line);
@@ -382,8 +373,6 @@ public final class InfoDisplay {
         return card;
     }
 
-    private static final String[] SIDEBAR_CARD_OFFSETS = new String[]{"\uDB00\uDC30", "\uDAFF\uDF89"};
-    private static final String CARD_BACKSIDE = "\uEFFF";
     private static Component[] sidebarCard(GameItem item) {
         Component[] card = new Component[10];
 
@@ -393,51 +382,51 @@ public final class InfoDisplay {
                 .append(text(CARD_BACKSIDE, CARD_FONT[0]));
         card[1] = Component.empty();
         for (int i = 1; i <= 8; i++) {
-            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, MONO_OFFSET_FONTS[0].color(BLACK)).append(offset(-8192));
+            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, MONO_OFFSET_FONTS[0]).append(offset(-8192));
         }
 
         return card;
     }
 
-    private static final int
-            CHAR_WIDTH = 8,
-            DIGIT_WIDTH = 5,
-            SPACE_WIDTH = 15;
-    private static Component cardBase(GameItem item, boolean raised) {
-        int offset = raised?0:1;
-        Component card = text(item.getCardSymbol(), CARD_FONT[offset])
-                .append(offset(-57));
+    private static Component cardBase(GameItem item, boolean is_raised) {
+        int  // Some statics
+            OFFSET_TO_LEFT_SIDE = -57, OFFSET_TO_RIGHT_SIDE = 4,
+            ICON_WIDTH = 8, CD_ICON_WIDTH = 9, DIGIT_WIDTH = 5, SPACE_WIDTH = 14; //Cooldown icon is 1 pixel wider
 
-        final Style digitsStyle = CARD_FONT[offset].color(BLACK);
+        int raise = is_raised?0:1;
+        Component card = text(item.getCardSymbol(), CARD_FONT[raise])
+                .append(offset(OFFSET_TO_LEFT_SIDE));
+
+        final Style digitsStyle = CARD_FONT[raise];
 
         // Item with rounds Cooldown
 
         if (item instanceof Cooldown itemCooldown)
             card = card
-                    .append(text("\uEFF0", CARD_FONT[offset]))
-                    .append(text(itemCooldown.getMaxCooldown(), digitsStyle))
-                    .append(offset((SPACE_WIDTH-2 - String.valueOf(itemCooldown.getMaxCooldown()).length() * DIGIT_WIDTH))); // why tf is this -2? Why not -1? Why it works?
+                    .append(text(COOLDOWN_CARD_ICON, CARD_FONT[raise])) // Cooldown icon
+                    .append(text(itemCooldown.getMaxCooldown(), digitsStyle)) // Cooldown number
+                    .append(offset((SPACE_WIDTH - String.valueOf(itemCooldown.getMaxCooldown()).length() * DIGIT_WIDTH))); // offset from right side of number
         else
-            card = card.append(offset(CHAR_WIDTH-1 + SPACE_WIDTH));
+            card = card.append(offset(CD_ICON_WIDTH + SPACE_WIDTH)); // If item doesn't have cooldown
 
         // Item with Conditional usage
 
         if (item instanceof Conditional)
-            card = card.append(text("\uEFF1", CARD_FONT[offset]));
+            card = card.append(text(CONDITIONAL_CARD_ICON, CARD_FONT[raise]));
         else
-            card = card.append(offset(CHAR_WIDTH));
+            card = card.append(offset(ICON_WIDTH));
 
         // Item with Energy usage
 
         int energy = item.getEnergyUsage();
         if (energy != 0)
             card = card
-                    .append(offset((SPACE_WIDTH - String.valueOf(energy).length() * DIGIT_WIDTH)))
-                    .append(text(energy, digitsStyle))
-                    .append(text("\uEFF2", CARD_FONT[offset]))
-                    .append(offset(4));
+                    .append(offset((SPACE_WIDTH - String.valueOf(energy).length() * DIGIT_WIDTH))) // Offset to left side of number
+                    .append(text(energy, digitsStyle)) // Energy usage number
+                    .append(text(ENERGY_USE_CARD_ICON, CARD_FONT[raise])) // Energy usage icon
+                    .append(offset(OFFSET_TO_RIGHT_SIDE)); // Move to card right side
         else
-            card = card.append(offset(CHAR_WIDTH + SPACE_WIDTH + 4));
+            card = card.append(offset(ICON_WIDTH + SPACE_WIDTH + OFFSET_TO_RIGHT_SIDE));
 
         return card;
     }

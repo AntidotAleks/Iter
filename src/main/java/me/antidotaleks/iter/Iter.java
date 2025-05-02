@@ -14,6 +14,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -132,13 +133,29 @@ public final class Iter extends JavaPlugin {
     }
 
 
-    // Font utils
+    // Utils vars
+
+    public static final String
+            HEALTH_COLOR_HEX = "#ff5252",
+            ENERGY_COLOR_HEX = "#5297ff";
+
+    public static final float HEALTH_BAR_FRACTION = 96/182f;
+
+    public static final ItemStack CURSOR_IS = new ItemStack(Material.GLASS_PANE, 1);
+
+    public static final String CARD_BLOCK = "\uEFFE";
+    public static final String CARD_BACKSIDE = "\uEFFF";
+    public static final String[] SIDEBAR_CARD_OFFSETS = new String[]{"\uDB00\uDC30", "\uDAFF\uDF89"};
+    public static final String
+            COOLDOWN_CARD_ICON = "\uEFF0",
+            CONDITIONAL_CARD_ICON = "\uEFF1",
+            ENERGY_USE_CARD_ICON = "\uEFF2";
 
     public static final Style[]
             CARD_FONT = new Style[]{
             Style.empty().font(Key.key("cards")),
             Style.empty().font(Key.key("cards_low"))
-    },
+            },
             MONO_OFFSET_FONTS = new Style[]{
                     Style.empty().font(Key.key("mono")),
                     Style.empty().font(Key.key("mono_low1")),
