@@ -4,6 +4,7 @@ import me.antidotaleks.iter.utils.TeamDisplay;
 import me.antidotaleks.iter.utils.TeamStyle;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
+import org.bukkit.event.HandlerList;
 
 import java.awt.*;
 import java.util.Arrays;
@@ -12,6 +13,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+
+import static me.antidotaleks.iter.Iter.tryCatch;
 
 public class GameTeam {
     // Game players
@@ -114,11 +117,16 @@ public class GameTeam {
         teamDisplay.updateBossbar();
     }
 
-    public void removeTeamDisplay() {
+    public void stop() {
         if(teamDisplay == null)
             return;
 
         teamDisplay.remove();
         teamDisplay = null;
+
+        players.forEach(player -> {
+            HandlerList.unregisterAll(player);
+            tryCatch(player::stop);
+        });
     }
 }

@@ -10,7 +10,6 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.potion.PotionEffectType;
 
@@ -18,8 +17,6 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import static me.antidotaleks.iter.Iter.tryCatch;
 
 public class Game implements Listener {
     // Teams
@@ -90,27 +87,22 @@ public class Game implements Listener {
 
     public void stopGame() {
         map.removeMap(mapLocation);
-        teams.forEach(GameTeam::removeTeamDisplay);
+        teams.forEach(GameTeam::stop);
 
-        teams.forEach(team -> {
-            team.forEachPlayer(player -> {
-                HandlerList.unregisterAll(player);
-                tryCatch(player::stop);
-            });
-
-            team.forEachPlayerBukkit(player ->
-                player.teleport(mapLocation.getWorld().getSpawnLocation())
-            );
-        });
+        teams.forEach(team -> team.forEachPlayerBukkit(player ->
+            player.teleport(mapLocation.getWorld().getSpawnLocation())
+        ));
     }
 
     private void roundStart() {
         teams.forEach(GameTeam::updateTeamDisplay);
-        getAllBukkitPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStyles[currentTeamPlayIndex()].toString() +" turn", 5, 35, 5));
 
         GameTeam nextTeam = teams.get(currentTeamPlayIndex);
         playersLeftThisTurn.addAll(nextTeam.getPlayers());
         nextTeam.forEachPlayer(GamePlayer::roundStart);
+
+        getAllBukkitPlayers().forEach(player -> player.sendTitle(" ", "Team "+ teamStyles[currentTeamPlayIndex()].toString() +" turn", 5, 35, 5));
+        nextTeam.forEachPlayerBukkit(player -> player.sendTitle("Your turn", "Team "+ teamStyles[currentTeamPlayIndex()].toString() +" turn", 5, 35, 5));
     }
 
     private void roundFinishing() {

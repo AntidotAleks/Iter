@@ -11,6 +11,7 @@ import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.Style;
+import net.kyori.adventure.text.format.TextColor;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -33,7 +34,7 @@ import java.util.Map;
 
 import static me.antidotaleks.iter.Iter.*;
 import static net.kyori.adventure.text.Component.*;
-import static net.kyori.adventure.text.format.NamedTextColor.WHITE;
+import static net.kyori.adventure.text.format.NamedTextColor.BLACK;
 
 public final class InfoDisplay {
 
@@ -143,17 +144,19 @@ public final class InfoDisplay {
         if (topBar == null)
             return;
 
+        final TextColor
+                healthColor = TextColor.fromHexString(HEALTH_COLOR_HEX),
+                energyColor = TextColor.fromHexString(ENERGY_COLOR_HEX);
+
         int health = gamePlayer.getHealth();
         int maxHealth = gamePlayer.getMaxHealth();
         int energy = gamePlayer.getEnergy();
         int maxEnergy = gamePlayer.getMaxEnergy();
 
-        // Component tempText = text("❤ "+health+"/"+maxHealth)
-        //         .color(TextColor.color(Integer.parseInt(HEALTH_COLOR, 16)))
-        //         .append(text(" | ").color(WHITE))
-        //         .append(text("♦ "+energy+"/"+maxEnergy)
-        //                 .color(TextColor.color(Integer.parseInt(ENERGY_COLOR, 16))));
-        // bossBar.name(tempText);
+        Component tempText = text("❤ "+health+"/"+maxHealth).style(MONO_OFFSET_FONTS[1])
+                .append(offset(60))
+                .append(text("♦ "+energy+"/"+maxEnergy).style(MONO_OFFSET_FONTS[1].color(energyColor)));
+        topBar.name(tempText);
 
         topBar.progress((float) health / maxHealth * HEALTH_BAR_FRACTION);
     }
@@ -212,8 +215,8 @@ public final class InfoDisplay {
                         .append(cardBase(usedItems.get(i).getKey(), false)));
         }
         else {
-            // show amount of cards used minus 4
-            sidebar.line(0, text("\uEFFE",CARD_FONT[0].color(WHITE))
+            // show the number of cards used except last 4
+            sidebar.line(0, text("\uEFFE",CARD_FONT[0])
                     .append(offset(-50))
                     .append(text("+"+(usedAmount-4), MONO_OFFSET_FONTS[0])));
             // and 4 latest used cards
@@ -315,6 +318,9 @@ public final class InfoDisplay {
         infoDisplay.remove();
         fakePlayerInfoDisplay.remove();
 
+        // Fake player
+        fakePlayer.removeFakePlayer();
+
         // Sidebar
         if (sidebar != null)
             sidebar.close();
@@ -332,9 +338,6 @@ public final class InfoDisplay {
         tryIgnored(cursorUpdater::cancel);
         if (cursor != null)
             cursor.remove();
-
-        // Fake player
-        fakePlayer.removeFakePlayer();
     }
 
     public void mount() {
@@ -363,7 +366,7 @@ public final class InfoDisplay {
         };
         for (int i = 0; i < 3; i++) {
             Component line = text(title[i])
-                    .style(MONO_OFFSET_FONTS[offset+i]);
+                    .style(MONO_OFFSET_FONTS[offset+i].color(BLACK));
 
             card = card.append(offsets[i]);
             card = card.append(line);
@@ -382,22 +385,22 @@ public final class InfoDisplay {
                 .append(text(CARD_BACKSIDE, CARD_FONT[0]));
         card[1] = Component.empty();
         for (int i = 1; i <= 8; i++) {
-            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, MONO_OFFSET_FONTS[0]).append(offset(-8192));
+            card[i+1] = translatable("card."+item.getName().replace(" ", "")+"."+i, MONO_OFFSET_FONTS[0].color(BLACK)).append(offset(-8192));
         }
 
         return card;
     }
 
     private static Component cardBase(GameItem item, boolean is_raised) {
-        int  // Some statics
+        final int  // Some statics
             OFFSET_TO_LEFT_SIDE = -57, OFFSET_TO_RIGHT_SIDE = 4, // -OFFSET_TO_LEFT_SIDE = OFFSET_TO_RIGHT_SIDE + (2 x ICON_WIDTH + CD_ICON_WIDTH) + (2 x SPACE_WIDTH)
             ICON_WIDTH = 8, CD_ICON_WIDTH = 9, DIGIT_WIDTH = 5, SPACE_WIDTH = 14; //Cooldown icon is 1 pixel wider
 
-        int raise = is_raised?0:1;
+        final int raise = is_raised?0:1;
         Component card = text(item.getCardSymbol(), CARD_FONT[raise])
                 .append(offset(OFFSET_TO_LEFT_SIDE)); // Move to ~card's left side (from where symbols are added)
 
-        final Style digitsStyle = CARD_FONT[raise];
+        final Style digitsStyle = CARD_FONT[raise].color(BLACK);
 
         // Item with rounds Cooldown
 

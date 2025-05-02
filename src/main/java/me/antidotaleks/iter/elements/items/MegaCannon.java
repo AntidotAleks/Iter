@@ -30,17 +30,10 @@ public class MegaCannon extends MovementCooldownGameItem implements Conditional 
 
     @Override
     public boolean usable(@NotNull Point coords, int step) {
-        // Walkable distance is 1 tile
-        if(tilesAwayTaxi(getCurrentPosition(), coords) != 1)
-            return false;
-
-        if (!TargetSelector.ENEMY.canUseAt(coords, player, step))
-            return false;
-
-        Point playerBack = player.getPosition();
-        playerBack.translate(playerBack.x-coords.x, playerBack.y-coords.y);
-
-        return super.usable(playerBack, step);
+        // Walkable distance is 1 tile, selection on the enemy, pushes away from the player selected
+        return tilesAwayTaxi(getCurrentPosition(), coords) == 1 &&
+                TargetSelector.ENEMY.canUseAt(coords, player, step) &&
+                super.usable(oppositeFromPlayer(coords), step);
     }
 
     @Override
@@ -48,7 +41,13 @@ public class MegaCannon extends MovementCooldownGameItem implements Conditional 
         GamePlayer playerHit = player.getGame().getPlayer(coords);
         playerHit.damage(4+player.getFlatDamage());
 
-        super.use(coords);
+        super.use(oppositeFromPlayer(coords));
+    }
+
+    private Point oppositeFromPlayer(Point point) {
+        Point playerBack = player.getPosition();
+        playerBack.translate(playerBack.x-point.x, playerBack.y-point.y);
+        return playerBack;
     }
 
     @Override

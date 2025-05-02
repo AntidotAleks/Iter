@@ -75,10 +75,6 @@ public final class Iter extends JavaPlugin {
     public static ScoreboardLibrary scoreboardLibrary;
     public static BukkitAudiences audiences;
 
-
-    public static final BlockData AIR_DATA = Bukkit.createBlockData(Material.AIR);
-    public static final BlockData BARRIER_DATA = Bukkit.createBlockData(Material.BARRIER);
-
     // Utils
 
     public static void tryIgnored(Runnable runnable) {
@@ -141,10 +137,12 @@ public final class Iter extends JavaPlugin {
 
     public static final float HEALTH_BAR_FRACTION = 96/182f;
 
+    public static final BlockData AIR_DATA = Bukkit.createBlockData(Material.AIR);
     public static final ItemStack CURSOR_IS = new ItemStack(Material.GLASS_PANE, 1);
 
     public static final String CARD_BLOCK = "\uEFFE";
     public static final String CARD_BACKSIDE = "\uEFFF";
+    public static final String[] CARD_HISTORY_STATES = new String[]{"\uEFE0", "\uEFE1", "\uEFE2"};
     public static final String[] SIDEBAR_CARD_OFFSETS = new String[]{"\uDB00\uDC30", "\uDAFF\uDF89"};
     public static final String
             COOLDOWN_CARD_ICON = "\uEFF0",

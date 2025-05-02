@@ -1,4 +1,4 @@
-package me.antidotaleks.iter.maps;
+package me.antidotaleks.iter;
 
 public class Test {
 
