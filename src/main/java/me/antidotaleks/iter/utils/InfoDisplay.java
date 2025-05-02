@@ -160,9 +160,9 @@ public final class InfoDisplay {
 
     // Card UI
 
-    Sidebar sidebar = null;
-    private Component bottomBar = null;
-    BukkitRunnable bottomBarUpdater = null;
+    Sidebar sidebar;
+    private Component bottomBarText;
+    BukkitRunnable bottomBarUpdater;
 
     public void updateSelection() {
         if (cards.isEmpty())
@@ -175,7 +175,7 @@ public final class InfoDisplay {
             sidebar.addPlayer(player);
 
             bottomBarUpdater = new BukkitRunnable() {@Override public void run() {
-                audience.sendActionBar(bottomBar);
+                audience.sendActionBar(bottomBarText);
             }};
             bottomBarUpdater.runTaskTimer(Iter.plugin, 0, 15);
         }
@@ -184,8 +184,8 @@ public final class InfoDisplay {
         var cardTextBase = cards.get(index);
 
         // Bottom Bar card to show
-        bottomBar = addCardBlocksToBase(cardTextBase.getKey(), index);
-        audience.sendActionBar(bottomBar);
+        bottomBarText = addCardBlocksToBase(cardTextBase.getKey(), index);
+        audience.sendActionBar(bottomBarText);
 
         // Sidebar card list to show
         Component[] sidebarCard = cardTextBase.getValue();
@@ -390,12 +390,12 @@ public final class InfoDisplay {
 
     private static Component cardBase(GameItem item, boolean is_raised) {
         int  // Some statics
-            OFFSET_TO_LEFT_SIDE = -57, OFFSET_TO_RIGHT_SIDE = 4,
+            OFFSET_TO_LEFT_SIDE = -57, OFFSET_TO_RIGHT_SIDE = 4, // -OFFSET_TO_LEFT_SIDE = OFFSET_TO_RIGHT_SIDE + (2 x ICON_WIDTH + CD_ICON_WIDTH) + (2 x SPACE_WIDTH)
             ICON_WIDTH = 8, CD_ICON_WIDTH = 9, DIGIT_WIDTH = 5, SPACE_WIDTH = 14; //Cooldown icon is 1 pixel wider
 
         int raise = is_raised?0:1;
         Component card = text(item.getCardSymbol(), CARD_FONT[raise])
-                .append(offset(OFFSET_TO_LEFT_SIDE));
+                .append(offset(OFFSET_TO_LEFT_SIDE)); // Move to ~card's left side (from where symbols are added)
 
         final Style digitsStyle = CARD_FONT[raise];
 
@@ -412,9 +412,9 @@ public final class InfoDisplay {
         // Item with Conditional usage
 
         if (item instanceof Conditional)
-            card = card.append(text(CONDITIONAL_CARD_ICON, CARD_FONT[raise]));
+            card = card.append(text(CONDITIONAL_CARD_ICON, CARD_FONT[raise])); // Conditional icon
         else
-            card = card.append(offset(ICON_WIDTH));
+            card = card.append(offset(ICON_WIDTH)); // If item doesn't have conditional
 
         // Item with Energy usage
 
@@ -424,9 +424,9 @@ public final class InfoDisplay {
                     .append(offset((SPACE_WIDTH - String.valueOf(energy).length() * DIGIT_WIDTH))) // Offset to left side of number
                     .append(text(energy, digitsStyle)) // Energy usage number
                     .append(text(ENERGY_USE_CARD_ICON, CARD_FONT[raise])) // Energy usage icon
-                    .append(offset(OFFSET_TO_RIGHT_SIDE)); // Move to card right side
+                    .append(offset(OFFSET_TO_RIGHT_SIDE)); // Move to card's right side
         else
-            card = card.append(offset(ICON_WIDTH + SPACE_WIDTH + OFFSET_TO_RIGHT_SIDE));
+            card = card.append(offset(ICON_WIDTH + SPACE_WIDTH + OFFSET_TO_RIGHT_SIDE)); // If item doesn't use energy + move to card's right side
 
         return card;
     }
