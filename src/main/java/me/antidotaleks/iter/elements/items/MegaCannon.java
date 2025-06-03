@@ -1,5 +1,6 @@
 package me.antidotaleks.iter.elements.items;
 
+import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.utils.items.GameItem;
@@ -30,6 +31,7 @@ public class MegaCannon extends MovementCooldownGameItem implements Conditional 
 
     @Override
     public boolean usable(@NotNull Point coords, int step) {
+        Iter.logger.info("Using MegaCannon: " + coords + " at step " + step + " at " + coords + " + mirroring " + oppositeFromPlayer(coords));
         // Walkable distance is 1 tile, selection on the enemy, pushes away from the player selected
         return tilesAwayTaxi(getCurrentPosition(), coords) == 1 &&
                 TargetSelector.ENEMY.canUseAt(coords, player, step) &&
@@ -38,15 +40,21 @@ public class MegaCannon extends MovementCooldownGameItem implements Conditional 
 
     @Override
     public void use(Point coords) {
-        GamePlayer playerHit = player.getGame().getPlayer(coords);
-        playerHit.damage(4+player.getFlatDamage());
-
         super.use(oppositeFromPlayer(coords));
+
+        GamePlayer playerHit = player.getGame().getPlayer(coords);
+        if (playerHit == null) {
+            Iter.logger.warning("Player hit is null at " + coords + " for player " + player.getPlayer().getName());
+            return;
+        }
+        playerHit.damage(4+player.getFlatDamage());
     }
 
     private Point oppositeFromPlayer(Point point) {
         Point playerBack = player.getPosition();
-        playerBack.translate(playerBack.x-point.x, playerBack.y-point.y);
+        int dx = playerBack.x - point.x;
+        int dy = playerBack.y - point.y;
+        playerBack.translate(dx, dy);
         return playerBack;
     }
 

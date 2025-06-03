@@ -32,6 +32,10 @@ public class ItemBasePunch extends GameItem {
     @Override
     public void use(Point coords) {
         GamePlayer playerHit = player.getGame().getPlayer(coords);
+        if (playerHit == null) {
+            Iter.logger.warning("Player hit is null at " + coords + " for player " + player.getPlayer().getName());
+            return;
+        }
         playerHit.damage(1+player.getFlatDamage());
 
         particles(player.getPosition(), coords);

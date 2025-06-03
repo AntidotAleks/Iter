@@ -312,6 +312,13 @@ public final class InfoDisplay {
 
     // Utils
 
+    public void removeFakePlayer() {
+        if (fakePlayer == null) return;
+
+        fakePlayer.remove();
+        fakePlayerInfoDisplay.remove();
+    }
+
     public void remove() {
         // info displays
         dismount();
@@ -319,7 +326,7 @@ public final class InfoDisplay {
         fakePlayerInfoDisplay.remove();
 
         // Fake player
-        fakePlayer.removeFakePlayer();
+        fakePlayer.remove();
 
         // Sidebar
         if (sidebar != null)

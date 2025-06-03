@@ -32,7 +32,7 @@ public abstract class MovementGameItem extends GameItem implements PreUsed {
 
     @Override
     public void preUse(Point coords) {
-        player.stepPlan.add(coords);
+        player.stepPlan.add(coords); // Used to check if the player is not overlapping with other players at the same step
     }
 
     public void undoPreUse() {
@@ -41,8 +41,8 @@ public abstract class MovementGameItem extends GameItem implements PreUsed {
 
     @Override
     public void use(Point coords) {
-        player.setPosition(player.stepPlan.getFirst());
-        player.stepPlan.removeFirst();
+        player.setPosition(coords);
+        player.stepPlan.removeFirst(); // Remove the first step in the list, as it is the current position
     }
 
     @Override

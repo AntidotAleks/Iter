@@ -203,7 +203,7 @@ public class Game implements Listener {
      */
     public GamePlayer getPlayer(Point coords) {
         return getAllGamePlayers().stream()
-                .filter(player -> player.getPosition().equals(coords))
+                .filter(player -> player.isAlive() && player.getPosition().equals(coords))
                 .findFirst().orElse(null);
     }
 

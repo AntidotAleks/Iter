@@ -57,7 +57,7 @@ public final class FakePlayer {
         // Generate info
 
         if (entityId != -1)
-            removeFakePlayer();
+            remove();
         entityId = (int) (Math.random() * Integer.MAX_VALUE);
         uuid = UUID.randomUUID();
         location = playerBase.getWorldPosition();
@@ -153,12 +153,12 @@ public final class FakePlayer {
         this.location = newLocation;
     }
 
-    public void removeFakePlayer() {
+    public void remove() {
         this.allPlayersInGame = tryCatchReturn(() -> playerBase.getGame().getAllBukkitPlayers());
-        tryCatch(() -> removeFakePlayer(allPlayersInGame), "Error removing fake player");
+        tryCatch(() -> remove(allPlayersInGame), "Error removing fake player");
     }
 
-    private void removeFakePlayer(List<Player> playersToRemoveFrom) {
+    private void remove(List<Player> playersToRemoveFrom) {
         if(playersToRemoveFrom == null) return;
 
         if(entityId == -1) return;

@@ -58,7 +58,7 @@ public final class GamePlayer implements Listener {
     private int energy = maxEnergy;
     private int flatDamage = 0;
 
-    private boolean isDead = false;
+    private boolean isAlive = true;
 
 
     public GamePlayer(Player player, GameTeam team, Point spawnPosition, ConfigurationSection modifiers, double disbalanceModifier) {
@@ -269,7 +269,6 @@ public final class GamePlayer implements Listener {
             itemCooldown.putOnCooldown();
 
         updateItemBlocks();
-
         infoDisplay.updateSelection();
         // Iter.logger.info(player.getName()+" used at tile: [" + tilePos.x + ", " + tilePos.y+"]");
     }
@@ -288,7 +287,10 @@ public final class GamePlayer implements Listener {
             itemCooldown.removeCooldown();
 
         itemsUsed.removeLast();
+
+        infoDisplay.updateCardUseHistory();
         updateItemBlocks();
+        infoDisplay.updateSelection();
         // Iter.logger.info(player.getName()+" undo use");
     }
 
@@ -421,7 +423,8 @@ public final class GamePlayer implements Listener {
     public void setHealth(int health) {
         this.health = Math.clamp(health, 0, maxHealth);
         if (this.health == 0) {
-            this.isDead = true;
+            this.isAlive = false;
+            infoDisplay.removeFakePlayer();
         }
     }
 
@@ -465,7 +468,11 @@ public final class GamePlayer implements Listener {
     }
 
     public boolean isDead() {
-        return isDead;
+        return !isAlive;
+    }
+
+    public boolean isAlive() {
+        return isAlive;
     }
 
     public Player getPlayer() {
