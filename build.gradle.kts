@@ -33,8 +33,10 @@ repositories {
 }
 
 dependencies {
-    compileOnly(libs.org.jetbrains.annotations)
+    // Spigot API
     compileOnly(libs.org.spigotmc.spigot)
+
+    // ProtocolLib
     compileOnly(libs.com.comphenix.protocol.protocollib)
 
     // Scoreboard
@@ -43,9 +45,13 @@ dependencies {
     runtimeOnly("net.megavex:scoreboard-library-implementation:$scoreboardLibraryVersion")
     implementation("net.megavex:scoreboard-library-extra-kotlin:$scoreboardLibraryVersion")
     runtimeOnly("net.megavex:scoreboard-library-modern:$scoreboardLibraryVersion")
+
+    // Adventure API
     implementation("net.kyori:adventure-api:4.19.0")
     implementation("net.kyori:adventure-platform-bukkit:4.3.4")
 
+    // Misc
+    compileOnly(libs.org.jetbrains.annotations)
 }
 
 group = "me.antidotaleks"

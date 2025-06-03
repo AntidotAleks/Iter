@@ -10,7 +10,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -267,21 +266,16 @@ public final class Teaming implements Listener {
             return;
         startOnce = true;
 
-        new BukkitRunnable(){
-            @Override
-            public void run() {
-                removeOldInvites();
-            }
-        }.run();
+        Bukkit.getScheduler().runTask(Iter.plugin, Teaming::removeOldInvites);
     }
 
     private static void removeOldInvites() {
         long currentTime = System.currentTimeMillis();
 
         for (int i = invites.size()-1; i >= 0; i--) {
-            // Stop if invites list is empty
+            // Stop if the invite list is empty
             if (invites.isEmpty()) {
-                startRemoveTimer(0);
+                startRemoveTimer(0); // Start timer to check again in 30 seconds
                 break;
             }
 
@@ -296,13 +290,9 @@ public final class Teaming implements Listener {
 
     }
 
-    private static void startRemoveTimer(long delta) {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                removeOldInvites();
-            }
-        }.runTaskLater(Iter.plugin, (31_000 - delta) * 20/1000);
+    private static void startRemoveTimer(long deltaMillis) {
+        Bukkit.getScheduler().runTaskLater(Iter.plugin, Teaming::removeOldInvites,
+                (31_000 - deltaMillis) * 20/1000); // Convert milliseconds to ticks
     }
 
     private static class Invite {

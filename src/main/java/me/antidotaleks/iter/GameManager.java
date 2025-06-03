@@ -9,7 +9,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,11 +32,9 @@ public final class GameManager implements Listener {
     }
 
     public static void startGame(Map map, Player[][] players) {
-        Game thisGame = new Game(players, map); // Create new game instance
+        Game thisGame = new Game(players, map); // Create a new game instance
         Bukkit.getPluginManager().registerEvents(thisGame, Iter.plugin);
-        new BukkitRunnable() { @Override public void run() {
-            thisGame.startGame();
-        }}.runTaskLater(Iter.plugin, 20);
+        Bukkit.getScheduler().runTaskLater(Iter.plugin, thisGame::startGame, 20); // Start the game after a tick
 
         games.add(thisGame);
     }
@@ -165,14 +162,13 @@ public final class GameManager implements Listener {
         // Get smallest shortage value
         int minShortage = suitableMaps.stream().mapToInt(MapWithQueues::shortage).min().getAsInt();
 
-        // Remove all maps with bigger shortage
+        // Remove all maps with a bigger shortage
         suitableMaps.removeIf(mapWithQueues -> mapWithQueues.shortage() > minShortage);
 
-        // Return random map from suitable ones
+        // Return a random map from suitable ones
         return suitableMaps.get((int) (Math.random() * suitableMaps.size()));
     }
 
 
     private record MapWithQueues(Map map, ArrayList<PlayerQueueEvent>[] queues, int shortage) {}
-
 }

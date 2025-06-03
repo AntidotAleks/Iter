@@ -188,6 +188,9 @@ public final class GamePlayer implements Listener {
     }
 
     public void roundEnd() {
+        setEnergy(getMaxEnergy());
+        updateInfo();
+
         itemsUsed.clear();
         stepPlan.clear();
 

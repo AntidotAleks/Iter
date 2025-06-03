@@ -4,6 +4,7 @@ import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.Game;
 import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.elements.GameTeam;
+import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.*;
@@ -45,14 +46,16 @@ public class RoundCompletionProcessor {
         new BukkitRunnable() {
             @Override
             public void run() {
-                currentStepQueue = buildPriorityQueueForNextStep();
-                if (currentStepQueue.isEmpty()) {
-                    onRoundEnd.run();
-                } else {
-                    scheduleNextGroup(0); // Start consuming the first group immediately
-                }
             }
         }.runTaskLater(Iter.plugin, delay);
+
+        Bukkit.getScheduler().runTaskLater(Iter.plugin, () -> {
+            currentStepQueue = buildPriorityQueueForNextStep();
+            if (currentStepQueue.isEmpty())
+                onRoundEnd.run();
+            else
+                scheduleNextGroup(0); // Start consuming the first group immediately
+        }, delay);
     }
 
     /**

@@ -6,6 +6,7 @@ import me.antidotaleks.iter.maps.Map;
 import me.antidotaleks.iter.utils.RoundCompletionProcessor;
 import me.antidotaleks.iter.utils.TeamStyle;
 import me.antidotaleks.iter.utils.items.GameItem;
+import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -110,11 +111,18 @@ public class Game implements Listener {
     }
 
     private void roundEnd() {
-        teams.get(currentTeamPlayIndex).forEachPlayer(player -> {
-            player.roundEnd();
-            player.setEnergy(player.getMaxEnergy());
-            player.updateInfo();
-        });
+        teams.get(currentTeamPlayIndex).forEachPlayer(GamePlayer::roundEnd);
+
+        Iter.logger.info("Round ended. Team " + teamStyles[currentTeamPlayIndex()].toString() + " finished their turn");
+
+        if(checkIfGameEnd()) {
+            Iter.logger.info("Game ended");
+            getAllBukkitPlayers().forEach(player -> player.sendTitle("Game Over", "Team " + teamStyles[currentTeamPlayIndex()].toString() + " won!", 5, 35, 5));
+
+            // Stop the game after 4 seconds
+            Bukkit.getScheduler().runTaskLater(Iter.plugin, this::stopGame, 80);
+            return;
+        }
 
         incrementPlayIndex();
         roundStart();
@@ -140,6 +148,14 @@ public class Game implements Listener {
     }
     
     // Utils
+
+    public boolean checkIfGameEnd() {
+        // Check if only one team is left with players. AKA .getTeamHealthSum() > 0
+        int teamsWithPlayers = (int) teams.stream()
+                .filter(team -> team.getTeamHealthSum() > 0)
+                .count();
+        return teamsWithPlayers <= 1;
+    }
 
     public int teamDisbalance(int teamI) {
         return 0;

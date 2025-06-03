@@ -396,17 +396,17 @@ public final class InfoDisplay {
             OFFSET_TO_LEFT_SIDE = -57, OFFSET_TO_RIGHT_SIDE = 4, // -OFFSET_TO_LEFT_SIDE = OFFSET_TO_RIGHT_SIDE + (2 x ICON_WIDTH + CD_ICON_WIDTH) + (2 x SPACE_WIDTH)
             ICON_WIDTH = 8, CD_ICON_WIDTH = 9, DIGIT_WIDTH = 5, SPACE_WIDTH = 14; //Cooldown icon is 1 pixel wider
 
-        final int raise = is_raised?0:1;
-        Component card = text(item.getCardSymbol(), CARD_FONT[raise])
+        final Style card_font = CARD_FONT[is_raised?0:1];
+        Component card = text(item.getCardSymbol(), card_font)
                 .append(offset(OFFSET_TO_LEFT_SIDE)); // Move to ~card's left side (from where symbols are added)
 
-        final Style digitsStyle = CARD_FONT[raise].color(BLACK);
+        final Style digitsStyle = card_font.color(BLACK);
 
         // Item with rounds Cooldown
 
         if (item instanceof Cooldown itemCooldown)
             card = card
-                    .append(text(COOLDOWN_CARD_ICON, CARD_FONT[raise])) // Cooldown icon
+                    .append(text(COOLDOWN_CARD_ICON, card_font)) // Cooldown icon
                     .append(text(itemCooldown.getMaxCooldown(), digitsStyle)) // Cooldown number
                     .append(offset((SPACE_WIDTH - String.valueOf(itemCooldown.getMaxCooldown()).length() * DIGIT_WIDTH))); // offset from right side of number
         else
@@ -415,7 +415,7 @@ public final class InfoDisplay {
         // Item with Conditional usage
 
         if (item instanceof Conditional)
-            card = card.append(text(CONDITIONAL_CARD_ICON, CARD_FONT[raise])); // Conditional icon
+            card = card.append(text(CONDITIONAL_CARD_ICON, card_font)); // Conditional icon
         else
             card = card.append(offset(ICON_WIDTH)); // If item doesn't have conditional
 
@@ -426,7 +426,7 @@ public final class InfoDisplay {
             card = card
                     .append(offset((SPACE_WIDTH - String.valueOf(energy).length() * DIGIT_WIDTH))) // Offset to left side of number
                     .append(text(energy, digitsStyle)) // Energy usage number
-                    .append(text(ENERGY_USE_CARD_ICON, CARD_FONT[raise])) // Energy usage icon
+                    .append(text(ENERGY_USE_CARD_ICON, card_font)) // Energy usage icon
                     .append(offset(OFFSET_TO_RIGHT_SIDE)); // Move to card's right side
         else
             card = card.append(offset(ICON_WIDTH + SPACE_WIDTH + OFFSET_TO_RIGHT_SIDE)); // If item doesn't use energy + move to card's right side
