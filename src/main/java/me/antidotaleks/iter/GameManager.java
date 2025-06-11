@@ -34,7 +34,7 @@ public final class GameManager implements Listener {
     public static void startGame(Map map, Player[][] players) {
         Game thisGame = new Game(players, map); // Create a new game instance
         Bukkit.getPluginManager().registerEvents(thisGame, Iter.plugin);
-        Bukkit.getScheduler().runTaskLater(Iter.plugin, thisGame::startGame, 20); // Start the game after a tick
+        Bukkit.getScheduler().runTaskLater(Iter.plugin, thisGame::startGame, 20);
 
         games.add(thisGame);
     }

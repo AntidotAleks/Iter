@@ -210,7 +210,7 @@ public class Map {
     }
 
     /**
-     * Removes map (removes all blocks and displayBlock entities)
+     * Removes map (removes all blocks and displayBlock entities) from given location.
      */
     public void removeMap(Location mapLocation) {
         // Get useful cords
