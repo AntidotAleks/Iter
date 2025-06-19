@@ -4,7 +4,6 @@ import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.*;
-import com.google.common.collect.Multimap;
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.elements.GamePlayer;
 import org.bukkit.Location;
@@ -14,12 +13,10 @@ import org.bukkit.entity.Player;
 
 import java.util.*;
 
-import static me.antidotaleks.iter.Iter.tryCatch;
-import static me.antidotaleks.iter.Iter.tryCatchReturn;
+import static me.antidotaleks.iter.Iter.*;
 
 public final class FakePlayer {
-    private final GamePlayer playerBase;
-    private List<Player> allPlayersInGame;
+    private final GamePlayer gamePlayer;
     private Location location;
 
     private int entityId = -1;
@@ -28,15 +25,14 @@ public final class FakePlayer {
     // Common
 
     public FakePlayer(GamePlayer player) {
-        this.playerBase = player;
+        this.gamePlayer = player;
         spawnFakePlayer();
     }
 
     public void spawnFakePlayer() {
-        this.allPlayersInGame = tryCatchReturn(() -> playerBase.getGame().getAllBukkitPlayers());
         tryCatch(() -> {
-            spawnFakePlayer(allPlayersInGame);
-            glow(playerBase.getPlayer());
+            spawnFakePlayer(gamePlayer.game.getAllBukkitPlayers());
+            glow(gamePlayer.bukkitPlayer);
         }, "Error spawning fake player");
     }
 
@@ -60,14 +56,17 @@ public final class FakePlayer {
             remove();
         entityId = (int) (Math.random() * Integer.MAX_VALUE);
         uuid = UUID.randomUUID();
-        location = playerBase.getWorldPosition();
+        location = gamePlayer.getWorldPosition();
 
-        WrappedGameProfile profile = new WrappedGameProfile(uuid, playerBase.getPlayer().getName());
-        Multimap<String, WrappedSignedProperty> properties = WrappedGameProfile.fromPlayer(playerBase.getPlayer()).getProperties();
-        // System.out.println("Properties for "+playerBase.getPlayer().getName()+":");
-        // properties.forEach((x, y)-> System.out.println(x+": "+y.toString())); TODO: test in online, then remove
-        profile.getProperties().putAll(properties);
-        WrappedChatComponent displayName = WrappedChatComponent.fromText(playerBase.getPlayer().getName());
+        Iter.logger.info("Spawning fake player for " + gamePlayer.bukkitPlayer.getName());
+        WrappedGameProfile.fromPlayer(gamePlayer.bukkitPlayer).getProperties().forEach((name, property)
+                -> Iter.logger.info(name+": "+property));
+
+        WrappedGameProfile profile = new WrappedGameProfile(uuid, gamePlayer.bukkitPlayer.getName());
+        profile.getProperties().put("textures", getPlayerSkin().orElse(
+                new WrappedSignedProperty("textures", DEFAULT_SKIN, DEFAULT_SIGNATURE)
+        ));
+        WrappedChatComponent displayName = WrappedChatComponent.fromText(gamePlayer.bukkitPlayer.getName());
         PlayerInfoData playerInfoData = new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.CREATIVE, displayName);
 
         // Info Packet
@@ -100,23 +99,24 @@ public final class FakePlayer {
 
         // Send Packets
 
-        Iter.logger.info("Spawning fake player of " + playerBase.getPlayer().getName());
+        Iter.logger.info("Spawning fake player of " + gamePlayer.bukkitPlayer.getName());
 
         pm.broadcastServerPacket(infoPacket, playersToSpawnTo);
         pm.broadcastServerPacket(spawnPacket, playersToSpawnTo);
 
-        teleport(playerBase.getWorldPosition());
+        teleport(gamePlayer.getWorldPosition());
     }
 
     public void teleport(Location newLocation) {
+        var allPlayers = allPlayers();
         tryCatch(() -> {
-            moveEntity(entityId, newLocation, allPlayersInGame);
+            moveEntity(entityId, newLocation, allPlayers);
             Location passengerLocation = newLocation.clone().add(0, 1.8, 0);
             for (int passengerId : passengerIds) {
-                removePassenger(passengerId, allPlayersInGame);
+                removePassenger(passengerId, allPlayers);
                 Iter.protocolManager.getEntityFromID(Iter.overworld, passengerId).teleport(passengerLocation);
-                moveEntity(passengerId, passengerLocation, allPlayersInGame);
-                addPassenger(passengerId, allPlayersInGame);
+                moveEntity(passengerId, passengerLocation, allPlayers);
+                addPassenger(passengerId, allPlayers);
             }
         }, "Error teleporting fake player");
     }
@@ -154,8 +154,7 @@ public final class FakePlayer {
     }
 
     public void remove() {
-        this.allPlayersInGame = tryCatchReturn(() -> playerBase.getGame().getAllBukkitPlayers());
-        tryCatch(() -> remove(allPlayersInGame), "Error removing fake player");
+        tryCatch(() -> remove(gamePlayer.game.getAllBukkitPlayers()), "Error removing fake player");
     }
 
     private void remove(List<Player> playersToRemoveFrom) {
@@ -186,7 +185,7 @@ public final class FakePlayer {
 
         // Send Packets
 
-        Iter.logger.info("Removing fake player of " + playerBase.getPlayer().getName());
+        Iter.logger.info("Removing fake player of " + gamePlayer.bukkitPlayer.getName());
 
         pm.broadcastServerPacket(destroyPacket, playersToRemoveFrom);
         pm.broadcastServerPacket(infoPacket, playersToRemoveFrom);
@@ -212,7 +211,7 @@ public final class FakePlayer {
         watcher.setObject(0, byteSerializer, glowingMask);
 
         final List<WrappedDataValue> wrappedDataValueList = watcher.getWatchableObjects().stream().filter(Objects::nonNull).map( entry -> {
-            final WrappedDataWatcher.WrappedDataWatcherObject object = entry.getWatcherObject();
+            final var object = entry.getWatcherObject();
             return new WrappedDataValue(object.getIndex(), object.getSerializer(), entry.getRawValue());
         }).toList();
 
@@ -231,7 +230,7 @@ public final class FakePlayer {
     private final ArrayList<Integer> passengerIds = new ArrayList<>();
 
     public void addPassenger(Entity entity) {
-        tryCatch(() -> addPassenger(entity.getEntityId(), allPlayersInGame), "Error adding passenger to fake player");
+        tryCatch(() -> addPassenger(entity.getEntityId(), allPlayers()), "Error adding passenger to fake player");
     }
 
     private void addPassenger(int passengerId, List<Player> playersToAddPassengerTo) {
@@ -255,7 +254,7 @@ public final class FakePlayer {
     }
 
     public void removePassenger(Entity passenger) {
-        tryCatch(() -> removePassenger(passenger.getEntityId(), allPlayersInGame), "Error removing passenger from fake player");
+        tryCatch(() -> removePassenger(passenger.getEntityId(), allPlayers()), "Error removing passenger from fake player");
     }
 
     private void removePassenger(int passengerId, List<Player> playersToRemovePassengerFrom) {
@@ -293,4 +292,16 @@ public final class FakePlayer {
         pm.broadcastServerPacket(mountPacket, playersToUpdatePassengersFor);
     }
 
+    // Player skin
+
+    private Optional<WrappedSignedProperty> getPlayerSkin() {
+        var properties = WrappedGameProfile.fromPlayer(gamePlayer.bukkitPlayer).getProperties();
+        return properties.get("textures").stream().findFirst();
+    }
+
+    // Utils
+
+    private List<Player> allPlayers() {
+        return gamePlayer.game.getAllBukkitPlayers();
+    }
 }

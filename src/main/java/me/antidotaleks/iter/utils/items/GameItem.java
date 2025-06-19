@@ -4,9 +4,7 @@ import me.antidotaleks.iter.elements.GamePlayer;
 import me.antidotaleks.iter.maps.Map;
 import me.antidotaleks.iter.utils.items.specific.GameItemInterface;
 
-import java.awt.Point;
-import java.util.Arrays;
-import java.util.List;
+import java.awt.*;
 
 /**
  * Base class for all game items
@@ -23,15 +21,14 @@ public abstract class GameItem implements GameItemInterface {
      */
     public GameItem(GamePlayer player) {
         this.player = player;
-        this.map = player.getGame().getMap();
+        this.map = player.game.getMap();
     }
 
     protected Point getCurrentPosition() {
-        List<Point> stepPlanning = player.getStepPlanning();
-        if (stepPlanning.isEmpty())
+        if (player.stepPlan.isEmpty())
             return player.getPosition();
 
-        return stepPlanning.getLast();
+        return player.stepPlan.getLast();
     }
 
     public char getCardSymbol() {
@@ -97,22 +94,25 @@ public abstract class GameItem implements GameItemInterface {
         }
 
         public boolean canUseAt(Point coords, GamePlayer playerUsing, int step) {
+            if (playerUsing.game.getMap().isWall(coords))
+                return false;
+
             if (this == EMPTY_GROUND)
                 return isEmptyGround(coords, playerUsing, step);
 
             if (ground)
                 return true;
 
-            GamePlayer target = playerUsing.getGame().getPlayer(coords, step);
+            GamePlayer target = playerUsing.game.getPlayer(coords, step);
 
             if (target == null)
                 return false;
 
             if (self && target.equals(playerUsing))
                 return true;
-            else if (ally && Arrays.asList(target.getTeam()).contains(playerUsing))
+            else if (ally && target.team.hasPlayer(playerUsing))
                 return true;
-            else return enemy && !Arrays.asList(target.getTeam()).contains(playerUsing);
+            else return enemy && !target.team.hasPlayer(playerUsing);
         }
 
         private static boolean isEmptyGround(Point coords, GamePlayer player, int step) {

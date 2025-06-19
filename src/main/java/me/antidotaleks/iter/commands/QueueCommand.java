@@ -31,7 +31,7 @@ public final class QueueCommand implements TabExecutor {
             return true;
         }
 
-        switch (strings[0]) {
+        switch (strings[0].toLowerCase()) {
             case "start":
                 Player[] team = Teaming.getTeamWithHost(player);
                 try {
@@ -55,7 +55,7 @@ public final class QueueCommand implements TabExecutor {
                 }
                 player.sendMessage("Queue stopped");
                 break;
-            case "stopAllGames":
+            case "stopallgames":
                 player.sendMessage("Stopping all games");
                 for (int i = 0; i < GameManager.games.size(); i++)
                     GameManager.stopGame(GameManager.games.getLast());

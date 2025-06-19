@@ -40,7 +40,7 @@ public final class InfoDisplay {
 
     private final GamePlayer gamePlayer;
     private final FakePlayer fakePlayer;
-    private final Player player;
+    private final Player bukkitPlayer;
     private final Audience audience;
     private final TeamStyle teamStyle;
 
@@ -53,23 +53,23 @@ public final class InfoDisplay {
 
     // Common
 
-    public InfoDisplay(GamePlayer player) {
-        if (player == null)
+    public InfoDisplay(GamePlayer gamePlayer) {
+        if (gamePlayer == null)
             throw new IllegalArgumentException("Player cannot be null");
-        if (player.getFakePlayer() == null)
+        if (gamePlayer.getFakePlayer() == null)
             throw new IllegalStateException("Player must have FakePlayer object created before InfoDisplay");
 
-        this.gamePlayer = player;
-        this.fakePlayer = player.getFakePlayer();
-        this.player = player.getPlayer();
-        this.audience = Iter.audiences.player(this.player);
-        this.teamStyle = player.getTeam().getStyle();
+        this.gamePlayer = gamePlayer;
+        this.fakePlayer = gamePlayer.getFakePlayer();
+        this.bukkitPlayer = gamePlayer.bukkitPlayer;
+        this.audience = Iter.audiences.player(this.bukkitPlayer);
+        this.teamStyle = gamePlayer.team.style;
 
         this.infoDisplay = Iter.tryCatchReturn(() -> newAbovePlayerInfoDisplay(true));
         this.fakePlayerInfoDisplay = Iter.tryCatchReturn(() -> newAbovePlayerInfoDisplay(false));
         this.cursor = Iter.tryCatchReturn(this::newCursor);
 
-        player.getPlayer().setPlayerListName(ChatColor.of(teamStyle.color) +"["+ teamStyle +"] "+ ChatColor.of(teamStyle.lightColor) + player.getPlayer().getName());
+        this.bukkitPlayer.setPlayerListName(ChatColor.of(teamStyle.color) +"["+ teamStyle +"] "+ ChatColor.of(teamStyle.lightColor) + this.bukkitPlayer.getName());
 
         update();
         mount();
@@ -78,7 +78,7 @@ public final class InfoDisplay {
     // Display creation
 
     private TextDisplay newAbovePlayerInfoDisplay(boolean isForRealPlayer) {
-        TextDisplay infoDisplay = Iter.overworld.spawn(gamePlayer.getGame().getMapLocation(), TextDisplay.class);
+        TextDisplay infoDisplay = Iter.overworld.spawn(gamePlayer.game.getMapLocation(), TextDisplay.class);
 
         infoDisplay.setAlignment(TextDisplay.TextAlignment.CENTER);
         infoDisplay.setSeeThrough(true);
@@ -90,7 +90,7 @@ public final class InfoDisplay {
 
         if (isForRealPlayer) {
             infoDisplay.setTextOpacity((byte) 100); // ~half transparent
-            this.player.hideEntity(Iter.plugin, infoDisplay); // hide info for themselves
+            this.bukkitPlayer.hideEntity(Iter.plugin, infoDisplay); // hide info for themselves
         }
 
 
@@ -99,7 +99,7 @@ public final class InfoDisplay {
 
 
     private ItemDisplay newCursor() {
-        ItemDisplay cursor = this.player.getWorld().spawn(gamePlayer.getGame().getMapLocation(), ItemDisplay.class);
+        ItemDisplay cursor = this.bukkitPlayer.getWorld().spawn(gamePlayer.game.getMapLocation(), ItemDisplay.class);
 
         cursor.setItemStack(CURSOR_IS);
         cursor.setBrightness(new Display.Brightness(15, 15));
@@ -111,8 +111,8 @@ public final class InfoDisplay {
                 new AxisAngle4f()
         ));
 
-        gamePlayer.getGame().getAllBukkitPlayers().forEach(p -> p.hideEntity(Iter.plugin, cursor));
-        player.showEntity(Iter.plugin, cursor);
+        gamePlayer.game.getAllBukkitPlayers().forEach(p -> p.hideEntity(Iter.plugin, cursor));
+        bukkitPlayer.showEntity(Iter.plugin, cursor);
 
         return cursor;
     }
@@ -134,7 +134,7 @@ public final class InfoDisplay {
 
         // Update scoreboard
         String infoString = String.format("%s%s: %s%s\n"+ ChatColor.of(HEALTH_COLOR_HEX) +"❤%d/%d "+ChatColor.RESET+"| "+ChatColor.of(ENERGY_COLOR_HEX)+"♦ %d/%d\n",
-                        ChatColor.of(teamStyle.color), teamName, ChatColor.of(teamStyle.lightColor), this.player.getName(), health, maxHealth, energy, maxEnergy);
+                        ChatColor.of(teamStyle.color), teamName, ChatColor.of(teamStyle.lightColor), this.bukkitPlayer.getName(), health, maxHealth, energy, maxEnergy);
 
         infoDisplay.setText(infoString);
         fakePlayerInfoDisplay.setText(infoString);
@@ -175,7 +175,7 @@ public final class InfoDisplay {
         if (sidebar == null) {
             ScoreboardLibrary sl = Iter.scoreboardLibrary;
             sidebar = sl.createSidebar(15);
-            sidebar.addPlayer(player);
+            sidebar.addPlayer(bukkitPlayer);
 
             bottomBarUpdater = new BukkitRunnable() {@Override public void run() {
                 audience.sendActionBar(bottomBarText);
@@ -202,7 +202,6 @@ public final class InfoDisplay {
 
         var usedItems = gamePlayer.getItemsUsed();
         int usedAmount = usedItems.size();
-        logger.info(usedAmount+ " left");
 
         // Clear previous cards
         for (int i = 0; i < 5-usedAmount; i++)
@@ -267,12 +266,12 @@ public final class InfoDisplay {
     }
 
     public void showCursor() {
-        player.showEntity(Iter.plugin, cursor);
+        bukkitPlayer.showEntity(Iter.plugin, cursor);
         cursorUpdater = new BukkitRunnable() {
-            Location lastLocation = player.getLocation();
+            Location lastLocation = bukkitPlayer.getLocation();
             @Override
             public void run() {
-                Location newLocation = player.getLocation();
+                Location newLocation = bukkitPlayer.getLocation();
                 if (newLocation.equals(lastLocation))
                     return;
 
@@ -292,7 +291,7 @@ public final class InfoDisplay {
     }
 
     public void hideCursor() {
-        player.hideEntity(Iter.plugin, cursor);
+        bukkitPlayer.hideEntity(Iter.plugin, cursor);
         tryIgnored(() -> cursorUpdater.cancel());
     }
 
@@ -303,7 +302,7 @@ public final class InfoDisplay {
     }
 
     public void showTopBars() {
-        Audience playerAsAudience = audiences.player(player);
+        Audience playerAsAudience = audiences.player(bukkitPlayer);
         topBar = BossBar.bossBar(Component.empty(), 1, BossBar.Color.RED, BossBar.Overlay.PROGRESS);
         topBar.addViewer(playerAsAudience);
 
@@ -335,7 +334,7 @@ public final class InfoDisplay {
         // Bottom bar
         if (bottomBarUpdater != null)
             bottomBarUpdater.cancel();
-        player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent()); // Clear player's actionbar / bottom bar
+        bukkitPlayer.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent()); // Clear player's actionbar / bottom bar
 
         // Top bar
         if (topBar != null)
@@ -348,12 +347,12 @@ public final class InfoDisplay {
     }
 
     public void mount() {
-        player.addPassenger(infoDisplay);
+        bukkitPlayer.addPassenger(infoDisplay);
         fakePlayer.addPassenger(fakePlayerInfoDisplay);
     }
 
     public void dismount() {
-        this.player.removePassenger(infoDisplay);
+        this.bukkitPlayer.removePassenger(infoDisplay);
         this.fakePlayer.removePassenger(fakePlayerInfoDisplay);
     }
 
@@ -475,7 +474,7 @@ public final class InfoDisplay {
         return gamePlayer;
     }
 
-    public Player getPlayer() {
-        return player;
+    public Player getBukkitPlayer() {
+        return bukkitPlayer;
     }
 }

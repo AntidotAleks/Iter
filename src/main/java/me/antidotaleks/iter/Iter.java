@@ -167,4 +167,7 @@ public final class Iter extends JavaPlugin {
         if (offset < -8192 || offset > 8192) throw new IllegalArgumentException("Offset out of bounds, must be in [-8192, 8192]");
         return Component.translatable("space."+offset).style(Style.style().font(Key.key("default")));
     }
+
+    public static String DEFAULT_SKIN = "ewogICJ0aW1lc3RhbXAiIDogMTY1MDgzMDI5NzE5MCwKICAicHJvZmlsZUlkIiA6ICIxZDJkNWRkZjk2NDc0M2QwYjExYWExZjkxMDA2N2U2MiIsCiAgInByb2ZpbGVOYW1lIiA6ICJzbG93diIsCiAgInNpZ25hdHVyZVJlcXVpcmVkIiA6IHRydWUsCiAgInRleHR1cmVzIiA6IHsKICAgICJTS0lOIiA6IHsKICAgICAgInVybCIgOiAiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS83ZmEyOGNkZjhjMWQ1NzE3NTFiM2FhZWNkM2IwYmU2MGMzMTkyNmQ1YWY4NjVmMjc5YzNlZmU1MWI5Nzc2N2ExIgogICAgfQogIH0KfQ==";
+    public static String DEFAULT_SIGNATURE = "TuvAw9N7T+rASaVzjTRhK/iSAxV5chXuO2QeGjp3792qVzQQvido71fHGEDNWynIuh/WEmBrhqsojoD+uitoldvDGIkMYdswlHO7daRzb+vyE6EEIV70OKKAYW6K7PamAQgW0oQOIlhOdH4qD/Uuf64hy3gupi/KW8HBdBU3qdCNJzcEoFw78REZEwumAvke6ToYEhjpyNTgsiDLZbNgM9Zwax2XPOp7KptU0CLLaP/Q0KhNsJbd/jI8CKZznpiaYSgY6K86/V6dTz55wjXe89+TDwJ54wtT/ap6OdMIZS9SptYC/f98P71dXnqnSDMsgz5AlZNgveSSSLKPxIFUO+bHUaNDz/ruSIiQ1LVesNkysFQPlxAND84D/DEAMUxfjjxODcVnRlxSUvHX6Fjx4gQT//6saWr0EArkkNQvwY3ni2KOuEElHZdZ8t7eEXA8VQYS6UKhAXKtq3LkO0tibVnpLw0sd0nQIAZgz7R2j+EubgBHg5sg3UwiMd/VOHEyvMIpMI6841H2c2GfejxtwAoSBm7tjUlnD5Dwf+znqkz7ExRdA+1IbOOOvObsnm4tc+jF+j8K0IlJuPOtsFCViu+d7qKj14hGFWElauzz3LKYL1F5Uf1YxSMuV/nUKhMd72RgZunuF/H2GBbcfyX4BgJRbiJmfXYLzNc1U3HHAhM=";
 }

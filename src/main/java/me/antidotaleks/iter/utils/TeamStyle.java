@@ -39,8 +39,8 @@ public enum TeamStyle {
     }
 
     public static TeamStyle[] getColors(int teamAmount) {
-        if(teamAmount > values().length)
-            throw new IllegalArgumentException("Too many teams");
+        if(teamAmount < 1 || teamAmount > values().length)
+            throw new IllegalArgumentException("Team amount must be between 1 and " + values().length);
 
         TeamStyle[] colors = new TeamStyle[teamAmount];
         System.arraycopy(values(), 0, colors, 0, teamAmount);

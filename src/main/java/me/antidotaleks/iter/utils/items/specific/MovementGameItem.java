@@ -43,6 +43,7 @@ public abstract class MovementGameItem extends GameItem implements PreUsed {
     public void use(Point coords) {
         player.setPosition(coords);
         player.stepPlan.removeFirst(); // Remove the first step in the list, as it is the current position
+
     }
 
     @Override

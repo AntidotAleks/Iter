@@ -9,11 +9,9 @@ commands:
   iqueue:
     description: Start a queue.
     usage: /iqueue
-    permission: iter.iqueue
   iteam:
     description: Join a team.
     usage: /iteam <invite|kick|join|accept|decline|leave|list> [player]
-    permission: iter.iteam
   itest:
     description: Test command.
     usage: /itest

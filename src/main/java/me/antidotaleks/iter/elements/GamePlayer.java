@@ -6,6 +6,7 @@ import me.antidotaleks.iter.elements.items.*;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.utils.FakePlayer;
 import me.antidotaleks.iter.utils.InfoDisplay;
+import me.antidotaleks.iter.utils.StepPlan;
 import me.antidotaleks.iter.utils.items.Conditional;
 import me.antidotaleks.iter.utils.items.Cooldown;
 import me.antidotaleks.iter.utils.items.GameItem;
@@ -19,7 +20,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.player.*;
+import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerItemHeldEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.util.RayTraceResult;
 import org.jetbrains.annotations.NotNull;
@@ -34,9 +38,9 @@ public final class GamePlayer implements Listener {
 
     // Player
 
-    private final Player player;
-    private final GameTeam team;
-    private final Game game;
+    public final Player bukkitPlayer;
+    public final GameTeam team;
+    public final Game game;
     private FakePlayer fakePlayer;
     private InfoDisplay infoDisplay;
     private final Point pos = new Point();
@@ -48,7 +52,7 @@ public final class GamePlayer implements Listener {
     private int slotSelected = 0;
     /** List of items used in this turn. Each item is a pair of {@link GameItem} and {@link Point} for the tile it was used on. */
     private final ArrayDeque<Map.Entry<@NotNull GameItem, @NotNull Point>> itemsUsed = new ArrayDeque<>(); // Map.Entry is not modifiable
-    public final ArrayList<Point> stepPlan = new ArrayList<>();
+    public final StepPlan stepPlan;
 
     // Stats
 
@@ -61,13 +65,14 @@ public final class GamePlayer implements Listener {
     private boolean isAlive = true;
 
 
-    public GamePlayer(Player player, GameTeam team, Point spawnPosition, ConfigurationSection modifiers, double disbalanceModifier) {
+    public GamePlayer(Player bukkitPlayer, GameTeam team, Point spawnPosition, ConfigurationSection modifiers, double disbalanceModifier) {
 
         // Player data
 
-        this.player = player;
+        this.bukkitPlayer = bukkitPlayer;
         this.team = team;
         this.game = team.getGame();
+        this.stepPlan = new StepPlan(this);
         modifiers(modifiers, disbalanceModifier);
 
         // Items
@@ -86,7 +91,7 @@ public final class GamePlayer implements Listener {
 
         updateItemBlocks();
         infoDisplay.updateInventoryItemData();
-        player.getInventory().setHeldItemSlot(4);
+        bukkitPlayer.getInventory().setHeldItemSlot(4);
     }
 
     private void giveStartItems() {
@@ -95,9 +100,8 @@ public final class GamePlayer implements Listener {
         addItemUpdateless(new ItemBasePunch(this));
         addItemUpdateless(new UnusableItemTestForUI(this));
         addItemUpdateless(new MegaCannon(this));
-        addItemUpdateless(new FreeWalkingItemTest(this));
+        // addItemUpdateless(new FreeWalkingItemTest(this));
     }
-
 
     public void modifiers(ConfigurationSection modifiers, double disbalanceModifier) {
         maxHealth = (int) Math.round(
@@ -119,7 +123,7 @@ public final class GamePlayer implements Listener {
     /* RMB - use item, LMB - undo last item */
     @EventHandler
     public void playerInteractFromEvent(PlayerInteractEvent event) {
-        if (!event.getPlayer().equals(player) || !canPlay || event.getHand() != EquipmentSlot.HAND)
+        if (!event.getPlayer().equals(bukkitPlayer) || !canPlay || event.getHand() != EquipmentSlot.HAND)
             return;
         event.setCancelled(true);
 
@@ -127,6 +131,7 @@ public final class GamePlayer implements Listener {
             interact();
         else
             undoLast();
+        game.gameDisplay.updateForPlayer(this);
 
         updateInfo();
     }
@@ -134,7 +139,7 @@ public final class GamePlayer implements Listener {
     /* F - finish turn */
     @EventHandler
     public void finishTurnFromEvent(PlayerSwapHandItemsEvent event) {
-        if (!event.getPlayer().equals(player))
+        if (!event.getPlayer().equals(bukkitPlayer))
             return;
         event.setCancelled(true);
 
@@ -147,7 +152,7 @@ public final class GamePlayer implements Listener {
     /* Scroll wheel - change item */
     @EventHandler
     public void changeItemSelectedFromEvent(PlayerItemHeldEvent event) {
-        if (!event.getPlayer().equals(player))
+        if (!event.getPlayer().equals(bukkitPlayer))
             return;
         event.setCancelled(true);
 
@@ -157,14 +162,14 @@ public final class GamePlayer implements Listener {
         slotSelected += newSlot-4; // change current slot, 4 is the default middle slot
         slotSelected = ((slotSelected % itemAmount) + itemAmount) % itemAmount; // make sure it is in range of itemAmount
 
-        player.getInventory().setHeldItemSlot(4); // Return to middle slot
+        bukkitPlayer.getInventory().setHeldItemSlot(4); // Return to middle slot
 
         infoDisplay.updateSelection();
     }
 
     @EventHandler
     public void cancelDrop(PlayerDropItemEvent event) {
-        if (!event.getPlayer().equals(player))
+        if (!event.getPlayer().equals(bukkitPlayer))
             return;
         event.setCancelled(true);
     }
@@ -234,7 +239,7 @@ public final class GamePlayer implements Listener {
 
         GameItem item = itemsUsed.getFirst().getKey();
         item.use(itemsUsed.getFirst().getValue());
-        Iter.logger.info("Used item \"" + item.getName()+"\" at tile [" + itemsUsed.getFirst().getValue().x + ", " + itemsUsed.getFirst().getValue().y+"] by " + player.getName());
+        Iter.logger.info("Used item \"" + item.getName()+"\" at tile [" + itemsUsed.getFirst().getValue().x + ", " + itemsUsed.getFirst().getValue().y+"] by " + bukkitPlayer.getName());
 
         itemsUsed.removeFirst();
         infoDisplay.updateCardUseHistory();
@@ -316,11 +321,11 @@ public final class GamePlayer implements Listener {
      * @param loc world location
      */
     public void teleport(Location loc) {
-        List<Entity> passengers = player.getPassengers();
-        passengers.forEach(player::removePassenger);
-        loc.setDirection(player.getLocation().getDirection());
-        player.teleport(loc);
-        passengers.forEach(player::addPassenger);
+        List<Entity> passengers = bukkitPlayer.getPassengers();
+        passengers.forEach(bukkitPlayer::removePassenger);
+        loc.setDirection(bukkitPlayer.getLocation().getDirection());
+        bukkitPlayer.teleport(loc);
+        passengers.forEach(bukkitPlayer::addPassenger);
     }
 
     private void addItemUpdateless(GameItem item) {
@@ -339,11 +344,19 @@ public final class GamePlayer implements Listener {
         return (Point) pos.clone();
     }
 
+    /**
+     * Returns player's position at given step.
+     * If player haven't moved yet or if there is no step plan at given step, returns last (current) position.
+     * Don't use {@link StepPlan#size()}, it returns the size of step plan, not the last step number.
+     * @param step step index
+     * @return player's position at given step
+     */
     public Point getPositionAtStep(int step) {
         if (step <= 0 || stepPlan.isEmpty()) // if player haven't moved yet or if there is no step plan (players on other team)
             return getPosition();
 
         ArrayList<Integer> stepList = getStepList(itemsUsed);
+        Iter.logger.info("Player " + bukkitPlayer.getName() + " step list: " + stepList);
 
         if (stepList.getLast() == -1)
             return getPosition();
@@ -353,6 +366,9 @@ public final class GamePlayer implements Listener {
             return (Point) this.stepPlan.get(stepList.getLast()).clone();
 
         // Returns player's position at given step
+        int stepIndex = stepList.get(step);
+        if (stepIndex < 0)
+            return getPosition();
         return (Point) this.stepPlan.get(stepList.get(step)).clone();
     }
 
@@ -364,6 +380,12 @@ public final class GamePlayer implements Listener {
             steps.add(steps.getLast() + (use.getKey() instanceof MovementGameItem ? 1 : 0));
 
         return steps;
+    }
+
+    public int getCurrentStep() {
+        if (!game.playersLeftThisTurn.contains(this))
+            return 0;
+        return itemsUsed.size();
     }
 
     /**
@@ -381,14 +403,14 @@ public final class GamePlayer implements Listener {
     }
 
     public Point getLookTilePosition() {
-        if (player == null)
+        if (bukkitPlayer == null)
             return null;
 
-        if (player.getLocation().getPitch() <= 0) // cancel if player looks up
+        if (bukkitPlayer.getLocation().getPitch() <= 0) // cancel if player looks up
             return null;
 
 
-        RayTraceResult result = player.rayTraceBlocks(66);
+        RayTraceResult result = bukkitPlayer.rayTraceBlocks(66);
         if (result == null || result.getHitBlock() == null || result.getHitBlock().getLocation().getBlockY() != 0)
             return null;
 
@@ -475,18 +497,6 @@ public final class GamePlayer implements Listener {
         return isAlive;
     }
 
-    public Player getPlayer() {
-        return player;
-    }
-
-    public Game getGame() {
-        return game;
-    }
-
-    public GameTeam getTeam() {
-        return team;
-    }
-
     /** Returns a list of items in player's inventory. Each item is a pair of {@link GameItem} and boolean for if item being blocked. */
     public List<Pair<GameItem, Boolean>> getItems() {
         return List.copyOf(items);
@@ -499,10 +509,6 @@ public final class GamePlayer implements Listener {
     /** Returns a list of items used in this turn. Each item is a pair of {@link GameItem} and {@link Point} for the tile it was used on. */
     public List<Map.Entry<GameItem, Point>> getItemsUsed() {
         return itemsUsed.stream().toList();
-    }
-
-    public List<Point> getStepPlanning() {
-        return Collections.unmodifiableList(stepPlan);
     }
 
     public FakePlayer getFakePlayer() {

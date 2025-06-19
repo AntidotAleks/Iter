@@ -24,15 +24,15 @@ public class GameTeam {
     private final HashSet<Player> playersBukkit;
     private final List<Player> playersBukkitArray;
     // Misc
-    private final Game game;
+    public final Game game;
     private TeamDisplay teamDisplay;
     private final int teamIndex;
-    private final TeamStyle teamStyle;
+    public final TeamStyle style;
 
     public GameTeam(Game game, int teamIndex, Player[] players) {
         this.game = game;
         this.teamIndex = teamIndex;
-        this.teamStyle = game.getTeamStyle(teamIndex);
+        this.style = game.getTeamStyle(teamIndex);
 
         // Create GamePlayers
 
@@ -100,9 +100,6 @@ public class GameTeam {
         return teamIndex;
     }
 
-    public TeamStyle getStyle() {
-        return teamStyle;
-    }
 
     // Team display
 

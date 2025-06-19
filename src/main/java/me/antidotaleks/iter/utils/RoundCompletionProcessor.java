@@ -87,6 +87,7 @@ public class RoundCompletionProcessor {
                     scheduleNextStep(BETWEEN_STEP_DELAY);
                     return;
                 }
+                game.gameDisplay.decrementPaths(); // Update path indexes to change hue according to the current step
                 List<GamePlayer> group = currentStepQueue.pollFirst();
                 int nextDelay = group.stream()
                         .mapToInt(GamePlayer::useNextItem)

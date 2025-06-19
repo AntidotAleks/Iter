@@ -250,6 +250,10 @@ public class Map {
         return loc;
     }
 
+    public boolean isWall(Point point) {
+        return isWall(point.x, point.y);
+    }
+
     public boolean isWall(int x, int y) {
         if (x < 0 || y < 0 || x >= sizeX || y >= sizeY)
             return true;

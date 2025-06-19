@@ -3,6 +3,7 @@ package me.antidotaleks.iter.elements;
 import me.antidotaleks.iter.Iter;
 import me.antidotaleks.iter.events.PlayerFinishTurnEvent;
 import me.antidotaleks.iter.maps.Map;
+import me.antidotaleks.iter.utils.GameDisplay;
 import me.antidotaleks.iter.utils.RoundCompletionProcessor;
 import me.antidotaleks.iter.utils.TeamStyle;
 import me.antidotaleks.iter.utils.items.GameItem;
@@ -25,6 +26,7 @@ public class Game implements Listener {
     private final TeamStyle[] teamStyles;
     // Turns
     private int currentTeamPlayIndex = 0;
+    public final GameDisplay gameDisplay = new GameDisplay(this);
     // Map
     private final Map map;
     private final Location mapLocation;
@@ -135,10 +137,11 @@ public class Game implements Listener {
             return;
 
         playersLeftThisTurn.remove(event.getPlayer());
+        gameDisplay.updateAllForPlayer(event.getPlayer());
 
         Iter.logger.info(String.format(
                 "Player %s finished turn. %s",
-                event.getPlayer().getPlayer().getName(), (playersLeftThisTurn.isEmpty()) ? "All players finished their turn" : "Left: " + playersLeftThisTurn.size()
+                event.getPlayer().bukkitPlayer.getName(), (playersLeftThisTurn.isEmpty()) ? "All players finished their turn" : "Left: " + playersLeftThisTurn.size()
         ));
 
         // If all players finished their turn, finish round
@@ -191,7 +194,7 @@ public class Game implements Listener {
 
     public GamePlayer getPlayer(Player player) {
         return getAllGamePlayers().stream()
-                .filter(gamePlayer -> gamePlayer.getPlayer().equals(player))
+                .filter(gamePlayer -> gamePlayer.bukkitPlayer.equals(player))
                 .findFirst()
                 .orElse(null);
     }

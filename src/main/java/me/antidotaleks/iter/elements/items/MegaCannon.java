@@ -42,9 +42,9 @@ public class MegaCannon extends MovementCooldownGameItem implements Conditional 
     public void use(Point coords) {
         super.use(oppositeFromPlayer(coords));
 
-        GamePlayer playerHit = player.getGame().getPlayer(coords);
+        GamePlayer playerHit = player.game.getPlayer(coords);
         if (playerHit == null) {
-            Iter.logger.warning("Player hit is null at " + coords + " for player " + player.getPlayer().getName());
+            Iter.logger.warning("Player hit is null at " + coords + " for player " + player.bukkitPlayer.getName());
             return;
         }
         playerHit.damage(4+player.getFlatDamage());
